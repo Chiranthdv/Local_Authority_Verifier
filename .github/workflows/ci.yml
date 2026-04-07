@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Check backend syntax
+        run: |
+          node --check server.js
+          node --check routes/authRoutes.js
+          node --check routes/workerRoutes.js
+          node --check routes/reviewRoutes.js
+          node --check routes/jobRoutes.js
+          node --check routes/documentRoutes.js
+          node --check routes/userRoutes.js
+          node --check models/User.js
+          node --check models/WorkerProfile.js
+          node --check models/Review.js
+          node --check models/Job.js
+          node --check models/Document.js
+          node --check middleware/auth.js
+          node --check middleware/role.js
+          node --check config/multer.js
+          node --check utils/trustScore.js
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
