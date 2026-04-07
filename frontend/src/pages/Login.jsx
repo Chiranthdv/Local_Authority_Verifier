@@ -1,69 +1,91 @@
 import { useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import api from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 
 function Login() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, login } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    const res = await axios.post("http://localhost:5000/api/auth/login", form);
-    localStorage.setItem("user", JSON.stringify(res.data));
-    window.location.href = "/search";
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setErrors({});
+    setLoading(true);
+
+    try {
+      const { data } = await api.post("/auth/login", form);
+      await login(data.token);
+
+      const redirectTarget = location.state?.from;
+      if (redirectTarget) {
+        navigate(redirectTarget);
+      } else if (data.role === "admin") {
+        navigate("/admin/dashboard");
+      } else if (data.role === "worker" && !data.hasProfile) {
+        navigate("/worker/onboarding");
+      } else {
+        navigate("/");
+      }
+    } catch (error) {
+      const message = error.response?.data?.error || "Cannot connect to backend server";
+      setErrors({
+        email: message === "Invalid credentials" || message === "Email and password are required" ? message : "",
+        password: message === "Invalid credentials" || message === "Email and password are required" ? message : "",
+        form: message !== "Invalid credentials" && message !== "Email and password are required" ? message : ""
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-  <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+    <div className="mx-auto flex min-h-[70vh] max-w-md items-center px-4">
+      <form onSubmit={handleSubmit} className="w-full rounded-[2rem] border border-white/10 bg-black/40 p-8 shadow-2xl backdrop-blur-xl">
+        <h1 className="text-3xl font-semibold text-white">Sign In</h1>
+        <p className="mt-2 text-slate-400">Access your hiring dashboard.</p>
 
-    {/* 🌌 BACKGROUND SAME AS HOME */}
-    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-500 opacity-20 blur-3xl rounded-full z-0"></div>
-    <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-500 opacity-20 blur-3xl rounded-full z-0"></div>
+        <label className="mt-6 block text-sm text-slate-300">
+          Email
+          <input
+            type="email"
+            value={form.email}
+            onChange={(event) => setForm({ ...form, email: event.target.value })}
+            className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
+          />
+          {errors.email && <span className="mt-2 block text-rose-300">{errors.email}</span>}
+        </label>
 
-    {/* 🔥 CARD */}
-    <div className="relative z-10 bg-black/80 backdrop-blur-xl p-8 rounded-2xl w-full max-w-md shadow-2xl">
+        <label className="mt-4 block text-sm text-slate-300">
+          Password
+          <input
+            type="password"
+            value={form.password}
+            onChange={(event) => setForm({ ...form, password: event.target.value })}
+            className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
+          />
+          {errors.password && <span className="mt-2 block text-rose-300">{errors.password}</span>}
+        </label>
 
-      <h2 className="text-3xl text-center text-white mb-2">
-        Welcome Back
-      </h2>
+        {errors.form && <p className="mt-4 text-sm text-rose-300">{errors.form}</p>}
 
-      <p className="text-gray-400 text-center mb-6">
-        Login to your account
-      </p>
+        <button disabled={loading} className="mt-6 w-full rounded-2xl bg-cyan-400 px-4 py-3 font-semibold text-slate-950 disabled:opacity-60">
+          {loading ? "Signing in..." : "Sign In"}
+        </button>
 
-      <input
-        type="email"
-        placeholder="Email"
-        className="w-full p-3 mb-3 rounded-full bg-gray-800 text-white outline-none"
-        onChange={(e) => setForm({ ...form, email: e.target.value })}
-      />
-
-      <input
-        type="password"
-        placeholder="Password"
-        className="w-full p-3 mb-4 rounded-full bg-gray-800 text-white outline-none"
-        onChange={(e) => setForm({ ...form, password: e.target.value })}
-      />
-
-      <button
-        onClick={handleLogin}
-        className="w-full py-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold"
-      >
-        Login
-      </button>
-
-      <p className="text-center text-gray-400 mt-6 text-sm">
-        Don’t have an account?
-        <span
-          onClick={() => navigate("/register")}
-          className="text-blue-400 ml-2 cursor-pointer"
-        >
-          Sign Up
-        </span>
-      </p>
-
+        <p className="mt-4 text-sm text-slate-400">
+          Need an account? <button type="button" onClick={() => navigate("/register")} className="text-cyan-300">Register</button>
+        </p>
+      </form>
     </div>
-  </div>
-);
+  );
 }
 
 export default Login;

@@ -1,118 +1,81 @@
-
-import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-
 function Home() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen text-white px-6 relative overflow-hidden">
+    <div>
+      <section className="mx-auto max-w-7xl px-6 pt-8 pb-12">
+        <div className="overflow-hidden rounded-[2.5rem] border border-white/10 bg-[radial-gradient(circle_at_top_left,#164e63,#020617_58%)] shadow-2xl">
+          <div className="grid gap-10 px-8 py-12 lg:grid-cols-[1.2fr_0.8fr] lg:px-12">
+            <div>
+              <p className="mb-4 text-sm uppercase tracking-[0.45em] text-cyan-300">Trusted Local Hiring</p>
+              <h1 className="max-w-3xl text-4xl font-semibold leading-tight text-white md:text-6xl">
+                Find verified workers with real reviews, visible badge points, and simple contact details.
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+                TrustLayer helps customers discover skilled plumbers, electricians, carpenters, cleaners, and more.
+                Instead of guessing, you can compare worker profiles using ratings, review history, badge level, and location.
+              </p>
 
-      {/* 🌌 BACKGROUND GLOW (FIXED z-index) */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-500 opacity-20 blur-3xl rounded-full z-0"></div>
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-500 opacity-20 blur-3xl rounded-full z-0"></div>
+              <div className="mt-8 flex flex-wrap gap-4">
+                <button
+                  onClick={() => {
+                    navigate("/search");
+                  }}
+                  className="rounded-full bg-cyan-400 px-6 py-3 font-medium text-slate-950"
+                >
+                  Browse Workers
+                </button>
+                <button
+                  onClick={() => navigate("/register")}
+                  className="rounded-full border border-white/15 px-6 py-3 text-slate-100 hover:bg-white/5"
+                >
+                  Join as Worker
+                </button>
+              </div>
+            </div>
 
-      {/* 🔥 HERO SECTION (z-10 so clickable) */}
-      <div className="relative z-10 flex flex-col items-center justify-center text-center pt-32">
+            <div className="grid gap-4 self-end">
+              <div className="rounded-[2rem] border border-cyan-400/20 bg-cyan-400/10 p-6">
+                <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">How It Works</p>
+                <p className="mt-3 text-slate-200">1. Search by category and score.</p>
+                <p className="mt-2 text-slate-200">2. Open the full worker profile.</p>
+                <p className="mt-2 text-slate-200">3. Contact directly and review after the job.</p>
+              </div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: -40 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-5xl md:text-6xl font-bold leading-tight"
-        >
-          Hire{" "}
-          <span className="bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
-            Trusted Workers
-          </span>
-          <br />
-          Without the Guesswork
-        </motion.h1>
-
-        <p className="mt-6 text-gray-400 text-lg max-w-xl">
-          Verified electricians and plumbers with real trust scores,
-          real job history, and zero fake reviews.
-        </p>
-
-        {/* 🔥 BUTTONS (NOW WORKING 💯) */}
-        <div className="mt-8 flex gap-4">
-          <button
-            onClick={() => navigate("/search")}
-            className="bg-blue-600 px-6 py-3 rounded-lg hover:bg-blue-700 transition shadow-lg"
-          >
-            Explore Workers
-          </button>
-
-          <button
-            onClick={() => navigate("/register")}
-            className="border border-gray-600 px-6 py-3 rounded-lg hover:bg-gray-800 transition"
-          >
-            Join Now
-          </button>
+              <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
+                <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Why Customers Use It</p>
+                <p className="mt-3 text-slate-300">
+                  Badge points highlight reliable workers. Reviews give context. Verification helps reduce fake or incomplete profiles.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
-      </div>
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
+          <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
+            <h2 className="text-xl font-semibold text-white">Verified Profiles</h2>
+            <p className="mt-3 leading-7 text-slate-400">
+              Customers can check worker category, location, trust score, rating, and detailed profile information before deciding.
+            </p>
+          </div>
 
-      {/* 🔥 FLOATING CARDS */}
-      <div className="relative z-10 mt-24 flex justify-center gap-6 flex-wrap">
+          <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
+            <h2 className="text-xl font-semibold text-white">Transparent Reviews</h2>
+            <p className="mt-3 leading-7 text-slate-400">
+              After work is complete, customers leave star ratings and comments so future customers can choose with more confidence.
+            </p>
+          </div>
 
-        <motion.div
-          initial={{ y: 20 }}
-          animate={{ y: -20 }}
-          transition={{ repeat: Infinity, duration: 2, repeatType: "reverse" }}
-          className="bg-white/5 backdrop-blur-xl p-6 rounded-xl border border-white/10 w-64"
-        >
-          <h3 className="font-semibold">Ravi 🔧</h3>
-          <p className="text-gray-400 text-sm">Plumber</p>
-          <p className="text-green-400 mt-2">Trust: 80</p>
-        </motion.div>
-
-        <motion.div
-          initial={{ y: -20 }}
-          animate={{ y: 20 }}
-          transition={{ repeat: Infinity, duration: 2, repeatType: "reverse" }}
-          className="bg-white/5 backdrop-blur-xl p-6 rounded-xl border border-white/10 w-64"
-        >
-          <h3 className="font-semibold">Arjun ⚡</h3>
-          <p className="text-gray-400 text-sm">Electrician</p>
-          <p className="text-green-400 mt-2">Trust: 92</p>
-        </motion.div>
-
-      </div>
-
-      {/* 🔥 FEATURES */}
-      <div className="relative z-10 mt-32 grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-
-        <motion.div 
-          whileHover={{ scale: 1.05 }}
-          className="bg-white/5 p-6 rounded-xl border border-white/10"
-        >
-          <h3 className="text-xl font-semibold mb-2">Verified Identity</h3>
-          <p className="text-gray-400">
-            Every worker is verified using real documents.
-          </p>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ scale: 1.05 }}
-          className="bg-white/5 p-6 rounded-xl border border-white/10"
-        >
-          <h3 className="text-xl font-semibold mb-2">Trust Score</h3>
-          <p className="text-gray-400">
-            Based on real work, not fake ratings.
-          </p>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ scale: 1.05 }}
-          className="bg-white/5 p-6 rounded-xl border border-white/10"
-        >
-          <h3 className="text-xl font-semibold mb-2">Secure Hiring</h3>
-          <p className="text-gray-400">
-            Transparent and reliable system.
-          </p>
-        </motion.div>
-
-      </div>
+          <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
+            <h2 className="text-xl font-semibold text-white">Direct Contact</h2>
+            <p className="mt-3 leading-7 text-slate-400">
+              Logged-in customers can view the worker phone number on the profile page and contact them directly for the job.
+            </p>
+          </div>
+        </div>
+      </section>
 
     </div>
   );

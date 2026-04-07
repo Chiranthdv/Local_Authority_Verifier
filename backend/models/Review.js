@@ -14,7 +14,11 @@ const reviewSchema = new mongoose.Schema({
     ref: "User"
   },
 
-  rating: Number,
+  rating: {
+    type: Number,
+    min: 1,
+    max: 5
+  },
   comment: String
 
 }, { timestamps: true });

@@ -1,6 +1,8 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const router = express.Router();
 const Job = require("../models/Job");
+const WorkerProfile = require("../models/WorkerProfile");
 
 // Create job request (customer)
 router.post("/create", async (req, res) => {

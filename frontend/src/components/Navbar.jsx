@@ -1,49 +1,43 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function Navbar() {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"));
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   return (
-    <div className="fixed top-0 w-full z-50 bg-black/30 backdrop-blur-xl border-b border-white/10">
+    <header className="fixed top-0 z-50 w-full border-b border-white/10 bg-slate-950/75 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+        <Link to="/" className="text-xl font-semibold tracking-[0.2em] text-slate-100">
+          Trust<span className="text-cyan-400">Layer</span>
+        </Link>
 
-      <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+        <nav className="flex items-center gap-3 text-sm text-slate-200">
+          {!user && <Link to="/search" className="rounded-full px-4 py-2 hover:bg-white/5">Explore</Link>}
+          {!user && <Link to="/login" className="rounded-full px-4 py-2 hover:bg-white/5">Sign In</Link>}
+          {!user && <Link to="/register" className="rounded-full bg-cyan-500 px-4 py-2 font-medium text-slate-950">Register</Link>}
 
-        <h1 
-          onClick={() => navigate("/")}
-          className="text-xl font-bold tracking-wide cursor-pointer"
-        >
-          Trust<span className="text-blue-500">Layer</span>
-        </h1>
+          {user?.role === "customer" && <Link to="/search" className="rounded-full px-4 py-2 hover:bg-white/5">Explore</Link>}
+          {user?.role === "customer" && <Link to="/" className="rounded-full px-4 py-2 hover:bg-white/5">My Reviews</Link>}
 
-        <div className="flex items-center gap-6 text-sm">
+          {user?.role === "worker" && <Link to="/worker/onboarding" className="rounded-full px-4 py-2 hover:bg-white/5">My Profile</Link>}
+          {user?.role === "worker" && <Link to="/" className="rounded-full px-4 py-2 hover:bg-white/5">My Reviews</Link>}
 
-          <button onClick={() => navigate("/search")} className="hover:text-blue-400">
-            Explore
-          </button>
+          {user?.role === "admin" && <Link to="/admin/dashboard" className="rounded-full px-4 py-2 hover:bg-white/5">Admin Dashboard</Link>}
 
-          {!user ? (
-            <>
-              <button onClick={() => navigate("/login")} className="hover:text-blue-400">
-                Sign in
-              </button>
-
-              <button 
-                onClick={() => navigate("/register")}
-                className="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-              >
-                Get Started
-              </button>
-            </>
-          ) : (
-            <span className="text-green-400">{user.name}</span>
+          {user && (
+            <button onClick={handleLogout} className="rounded-full border border-white/15 px-4 py-2 hover:bg-white/5">
+              Logout
+            </button>
           )}
-
-        </div>
-
+        </nav>
       </div>
-
-    </div>
+    </header>
   );
 }
 

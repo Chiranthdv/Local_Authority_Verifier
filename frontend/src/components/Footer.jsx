@@ -1,8 +1,8 @@
 function Footer() {
   return (
-    <div className="border-t border-white/10 mt-20 py-6 text-center text-gray-400 text-sm">
-      © 2026 TrustLayer — Built with 💙
-    </div>
+    <footer className="border-t border-white/10 py-6 text-center text-sm text-slate-400">
+      Copyright 2026 TrustLayer. Built for trusted local hiring.
+    </footer>
   );
 }
 

@@ -1,85 +1,87 @@
 import { useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
-function Register() {
-    const navigate = useNavigate();
-    const [form, setForm] = useState({
-        name: "",
-        email: "",
-        password: "",
-        role: "customer"
-    });
+import { Navigate, useNavigate } from "react-router-dom";
+import api from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 
-  const handleRegister = async () => {
-    await axios.post("http://localhost:5000/api/auth/register", form);
-    alert("Account created!");
+function Register() {
+  const navigate = useNavigate();
+  const { user, login } = useAuth();
+  const [form, setForm] = useState({ name: "", email: "", password: "", role: "customer" });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setErrors({});
+    setLoading(true);
+
+    try {
+      await api.post("/auth/register", form);
+      const { data } = await api.post("/auth/login", { email: form.email, password: form.password });
+      await login(data.token);
+
+      if (form.role === "worker") {
+        navigate("/worker/onboarding");
+      } else {
+        navigate("/");
+      }
+    } catch (error) {
+      const message = error.response?.data?.error || "Cannot connect to backend server";
+      setErrors({
+        name: message === "All fields are required" ? "Please fill all fields" : "",
+        email: message === "Email already registered" ? "This email is already registered" : "",
+        password: message === "All fields are required" ? "Please fill all fields" : "",
+        form: message !== "Email already registered" ? message : ""
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-  <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+    <div className="mx-auto flex min-h-[70vh] max-w-md items-center px-4">
+      <form onSubmit={handleSubmit} className="w-full rounded-[2rem] border border-white/10 bg-black/40 p-8 shadow-2xl backdrop-blur-xl">
+        <h1 className="text-3xl font-semibold text-white">Create Account</h1>
+        <p className="mt-2 text-slate-400">Join as a customer or worker.</p>
 
-    {/* 🌌 BACKGROUND SAME AS HOME */}
-    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-500 opacity-20 blur-3xl rounded-full z-0"></div>
-    <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-500 opacity-20 blur-3xl rounded-full z-0"></div>
+        <label className="mt-6 block text-sm text-slate-300">
+          Name
+          <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3" />
+          {errors.name && <span className="mt-2 block text-rose-300">{errors.name}</span>}
+        </label>
 
-    {/* 🔥 CARD */}
-    <div className="relative z-10 bg-black/80 backdrop-blur-xl p-8 rounded-2xl w-full max-w-md shadow-2xl">
+        <label className="mt-4 block text-sm text-slate-300">
+          Email
+          <input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3" />
+          {errors.email && <span className="mt-2 block text-rose-300">{errors.email}</span>}
+        </label>
 
-      <h2 className="text-3xl text-center text-white mb-2">
-        Create Account
-      </h2>
+        <label className="mt-4 block text-sm text-slate-300">
+          Password
+          <input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3" />
+          {errors.password && <span className="mt-2 block text-rose-300">{errors.password}</span>}
+        </label>
 
-      <p className="text-gray-400 text-center mb-6">
-        Join our platform
-      </p>
+        <label className="mt-4 block text-sm text-slate-300">
+          Role
+          <select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3">
+            <option value="customer">Customer</option>
+            <option value="worker">Worker</option>
+          </select>
+        </label>
 
-      <input
-        placeholder="Name"
-        className="w-full p-3 mb-3 rounded-full bg-gray-800 text-white outline-none"
-        onChange={(e) => setForm({ ...form, name: e.target.value })}
-      />
+        {errors.form && <p className="mt-4 text-sm text-rose-300">{errors.form}</p>}
 
-      <input
-        placeholder="Email"
-        className="w-full p-3 mb-3 rounded-full bg-gray-800 text-white outline-none"
-        onChange={(e) => setForm({ ...form, email: e.target.value })}
-      />
-
-      <input
-        type="password"
-        placeholder="Password"
-        className="w-full p-3 mb-4 rounded-full bg-gray-800 text-white outline-none"
-        onChange={(e) => setForm({ ...form, password: e.target.value })}
-      />
-
-      <select
-        className="w-full p-3 mb-4 rounded-full bg-gray-800 text-white outline-none"
-        onChange={(e) => setForm({ ...form, role: e.target.value })}
-      >
-        <option value="customer">Customer</option>
-        <option value="worker">Worker</option>
-      </select>
-
-      <button
-        onClick={handleRegister}
-        className="w-full py-3 rounded-full bg-gradient-to-r from-green-500 to-blue-500 text-white font-semibold"
-      >
-        Sign Up
-      </button>
-
-      <p className="text-center text-gray-400 mt-6 text-sm">
-        Already have an account?
-        <span
-          onClick={() => navigate("/login")}
-          className="text-blue-400 ml-2 cursor-pointer"
-        >
-          Login
-        </span>
-      </p>
-
+        <button disabled={loading} className="mt-6 w-full rounded-2xl bg-emerald-400 px-4 py-3 font-semibold text-slate-950 disabled:opacity-60">
+          {loading ? "Creating account..." : "Register"}
+        </button>
+      </form>
     </div>
-  </div>
-);
+  );
 }
 
 export default Register;

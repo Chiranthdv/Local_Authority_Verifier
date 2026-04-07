@@ -8,10 +8,30 @@ const workerProfileSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ["plumber", "electrician"]
+    enum: ["plumber", "electrician", "carpenter", "cleaner", "painter", "mechanic", "gardener"]
   },
   experience: Number,
   location: String,
+  bio: {
+    type: String,
+    default: ""
+  },
+  skills: {
+    type: [String],
+    default: []
+  },
+  hourlyRate: {
+    type: Number,
+    default: 0
+  },
+  phone: {
+    type: String,
+    default: ""
+  },
+  photoUrl: {
+    type: String,
+    default: ""
+  },
 
   verificationStatus: {
     type: String,

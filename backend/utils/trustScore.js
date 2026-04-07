@@ -1,13 +1,16 @@
-const calculateTrustScore = async (worker) => {
-  let score = 0;
+const Review = require("../models/Review");
+const Job = require("../models/Job");
 
-  if (worker.verificationStatus === "approved") {
-    score += 30;
-  }
+async function calculateTrustScore(workerId) {
+  const reviews = await Review.find({ workerId });
+  const jobs = await Job.find({ workerId, status: "completed" });
 
-  // later we add document + jobs
+  let score = 50;
+  score += Math.min(jobs.length * 10, 30);
+  const fiveStars = reviews.filter((review) => review.rating === 5).length;
+  score += Math.min(fiveStars * 5, 20);
 
-  return score;
-};
+  return Math.min(Math.max(score, 0), 100);
+}
 
 module.exports = calculateTrustScore;
