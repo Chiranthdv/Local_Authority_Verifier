@@ -52,7 +52,7 @@ router.get("/pending", auth, role("admin"), async (req, res) => {
   }
 });
 
-router.get("/me/profile", auth, role("worker"), async (req, res) => {
+router.get("/me/profiles", auth, role("worker"), async (req, res) => {
   try {
     const worker = await WorkerProfile.findOne({ userId: req.user.userId })
       .populate("userId", "name email");
