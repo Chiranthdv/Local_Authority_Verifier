@@ -9,6 +9,10 @@ import Search from "./pages/Search";
 import WorkerProfile from "./pages/WorkerProfile";
 import WorkerOnboarding from "./pages/WorkerOnboarding";
 import AdminDashboard from "./pages/AdminDashboard";
+import CustomerRequests from "./pages/CustomerRequests";
+import WorkerRequests from "./pages/WorkerRequests";
+import Notifications from "./pages/Notifications";
+import Chat from "./pages/Chat";
 
 function App() {
   return (
@@ -35,6 +39,38 @@ function App() {
               element={
                 <ProtectedRoute roles={["admin"]}>
                   <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/requests/my"
+              element={
+                <ProtectedRoute roles={["customer"]}>
+                  <CustomerRequests />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/requests/inbox"
+              element={
+                <ProtectedRoute roles={["worker"]}>
+                  <WorkerRequests />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute roles={["customer", "worker", "admin"]}>
+                  <Notifications />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/chats"
+              element={
+                <ProtectedRoute roles={["customer", "worker"]}>
+                  <Chat />
                 </ProtectedRoute>
               }
             />

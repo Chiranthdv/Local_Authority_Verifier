@@ -23,12 +23,17 @@ function Navbar() {
           {!user && <Link to="/register" className="rounded-full bg-cyan-500 px-4 py-2 font-medium text-slate-950">Register</Link>}
 
           {user?.role === "customer" && <Link to="/search" className="rounded-full px-4 py-2 hover:bg-white/5">Explore</Link>}
-          {user?.role === "customer" && <Link to="/" className="rounded-full px-4 py-2 hover:bg-white/5">My Reviews</Link>}
+          {user?.role === "customer" && <Link to="/requests/my" className="rounded-full px-4 py-2 hover:bg-white/5">My Requests</Link>}
+          {user?.role === "customer" && <Link to="/chats" className="rounded-full px-4 py-2 hover:bg-white/5">Chats</Link>}
+          {user?.role === "customer" && <Link to="/notifications" className="rounded-full px-4 py-2 hover:bg-white/5">Notifications</Link>}
 
           {user?.role === "worker" && <Link to="/worker/onboarding" className="rounded-full px-4 py-2 hover:bg-white/5">My Profile</Link>}
-          {user?.role === "worker" && <Link to="/" className="rounded-full px-4 py-2 hover:bg-white/5">My Reviews</Link>}
+          {user?.role === "worker" && <Link to="/requests/inbox" className="rounded-full px-4 py-2 hover:bg-white/5">Request Inbox</Link>}
+          {user?.role === "worker" && <Link to="/chats" className="rounded-full px-4 py-2 hover:bg-white/5">Chats</Link>}
+          {user?.role === "worker" && <Link to="/notifications" className="rounded-full px-4 py-2 hover:bg-white/5">Notifications</Link>}
 
           {user?.role === "admin" && <Link to="/admin/dashboard" className="rounded-full px-4 py-2 hover:bg-white/5">Admin Dashboard</Link>}
+          {user?.role === "admin" && <Link to="/notifications" className="rounded-full px-4 py-2 hover:bg-white/5">Notifications</Link>}
 
           {user && (
             <button onClick={handleLogout} className="rounded-full border border-white/15 px-4 py-2 hover:bg-white/5">

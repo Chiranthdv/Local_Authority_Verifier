@@ -5,41 +5,143 @@ function AdminDashboard() {
   const [tab, setTab] = useState("pending");
   const [pendingWorkers, setPendingWorkers] = useState([]);
   const [users, setUsers] = useState([]);
+  const [selectedApplication, setSelectedApplication] = useState(null);
+  const [loadingApplication, setLoadingApplication] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [error, setError] = useState("");
+
+  const loadDashboardData = async () => {
+    try {
+      const [workersRes, usersRes] = await Promise.all([
+        api.get("/workers/pending"),
+        api.get("/users")
+      ]);
+      setPendingWorkers(workersRes.data || []);
+      setUsers(usersRes.data || []);
+    } catch (loadError) {
+      setPendingWorkers([]);
+      setUsers([]);
+    }
+  };
 
   useEffect(() => {
-    api.get("/workers/pending").then(({ data }) => setPendingWorkers(data)).catch(() => setPendingWorkers([]));
-    api.get("/users").then(({ data }) => setUsers(data)).catch(() => setUsers([]));
+    loadDashboardData();
   }, []);
 
-  const handleAction = async (id, action) => {
-    await api.patch(`/workers/${id}/${action}`);
-    setPendingWorkers((current) => current.filter((worker) => worker._id !== id));
+  const openApplication = async (workerId) => {
+    setLoadingApplication(true);
+    setError("");
+    setRejectReason("");
+    try {
+      const { data } = await api.get(`/workers/applications/${workerId}`);
+      setSelectedApplication(data);
+    } catch (applicationError) {
+      setError("Could not load worker application details.");
+      setSelectedApplication(null);
+    } finally {
+      setLoadingApplication(false);
+    }
+  };
+
+  const refreshSelectedApplication = async (workerId) => {
+    const { data } = await api.get(`/workers/applications/${workerId}`);
+    setSelectedApplication(data);
+  };
+
+  const handleApproveDocument = async (docId) => {
+    if (!selectedApplication) return;
+    try {
+      await api.patch(`/documents/${docId}/approve`);
+      await refreshSelectedApplication(selectedApplication._id);
+      await loadDashboardData();
+    } catch (actionError) {
+      setError(actionError.response?.data?.error || "Could not approve document.");
+    }
+  };
+
+  const handleRejectDocument = async (docId) => {
+    if (!selectedApplication) return;
+    try {
+      await api.patch(`/documents/${docId}/reject`, { reason: "Please re-upload a clear or valid file." });
+      await refreshSelectedApplication(selectedApplication._id);
+      await loadDashboardData();
+    } catch (actionError) {
+      setError(actionError.response?.data?.error || "Could not reject document.");
+    }
+  };
+
+  const handleApproveWorker = async (workerId) => {
+    try {
+      await api.patch(`/workers/${workerId}/approve`);
+      setPendingWorkers((current) => current.filter((worker) => worker._id !== workerId));
+      setSelectedApplication(null);
+      await loadDashboardData();
+    } catch (actionError) {
+      setError(actionError.response?.data?.error || "Could not approve worker.");
+    }
+  };
+
+  const handleRejectWorker = async (workerId) => {
+    if (!rejectReason.trim()) {
+      setError("Rejection reason is required.");
+      return;
+    }
+    try {
+      await api.patch(`/workers/${workerId}/reject`, { reason: rejectReason.trim() });
+      setPendingWorkers((current) => current.filter((worker) => worker._id !== workerId));
+      setSelectedApplication(null);
+      setRejectReason("");
+      await loadDashboardData();
+    } catch (actionError) {
+      setError(actionError.response?.data?.error || "Could not reject worker.");
+    }
   };
 
   const handleDeleteUser = async (id) => {
-    await api.delete(`/users/${id}`);
-    setUsers((current) => current.filter((user) => user._id !== id));
-    setPendingWorkers((current) => current.filter((worker) => worker.userId?._id !== id));
+    try {
+      await api.delete(`/users/${id}`);
+      setUsers((current) => current.filter((user) => user._id !== id));
+      setPendingWorkers((current) => current.filter((worker) => worker.userId?._id !== id));
+      if (selectedApplication?.userId?._id === id) {
+        setSelectedApplication(null);
+      }
+    } catch (actionError) {
+      setError("Could not delete user.");
+    }
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
+    <div className="mx-auto max-w-7xl px-6 py-10">
       <div className="mb-6 flex gap-3">
         <button onClick={() => setTab("pending")} className={`rounded-full px-5 py-2 ${tab === "pending" ? "bg-cyan-400 text-slate-950" : "border border-white/10 text-slate-300"}`}>Pending Workers</button>
         <button onClick={() => setTab("users")} className={`rounded-full px-5 py-2 ${tab === "users" ? "bg-cyan-400 text-slate-950" : "border border-white/10 text-slate-300"}`}>All Users</button>
       </div>
 
+      {error && <p className="mb-4 rounded-2xl border border-rose-300/30 bg-rose-500/10 px-4 py-3 text-rose-200">{error}</p>}
+
       {tab === "pending" && (
         <div className="space-y-4">
           {pendingWorkers.map((worker) => (
             <div key={worker._id} className="rounded-3xl border border-white/10 bg-white/5 p-6">
-              <h2 className="text-xl font-semibold text-white">{worker.userId?.name}</h2>
-              <p className="mt-2 text-slate-300">{worker.category} • {worker.location}</p>
-              <p className="mt-2 text-slate-400">{worker.bio || "No bio provided."}</p>
-              <p className="mt-2 text-slate-400">{worker.skills?.join(", ") || "No skills listed."}</p>
-              <div className="mt-4 flex gap-3">
-                <button onClick={() => handleAction(worker._id, "approve")} className="rounded-full bg-emerald-400 px-4 py-2 text-slate-950">Approve</button>
-                <button onClick={() => handleAction(worker._id, "reject")} className="rounded-full bg-rose-400 px-4 py-2 text-slate-950">Reject</button>
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-white">{worker.userId?.name}</h2>
+                  <p className="mt-1 text-slate-300">{worker.category} • {worker.location}</p>
+                  <p className="mt-1 text-slate-400">Age: {worker.age || "NA"} | Experience: {worker.experience || 0} years</p>
+                  <p className="mt-2 text-slate-400">{worker.bio || "No bio provided."}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-900/60 px-4 py-3 text-sm text-slate-300">
+                  <p>Docs: {worker.documentSummary?.total || 0}</p>
+                  <p className="mt-1">Approved: {worker.documentSummary?.approved || 0}</p>
+                  <p className="mt-1">Pending: {worker.documentSummary?.pending || 0}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button onClick={() => openApplication(worker._id)} className="rounded-full border border-cyan-300/50 px-4 py-2 text-cyan-200">
+                  {loadingApplication && selectedApplication?._id !== worker._id ? "Loading..." : "Open Application"}
+                </button>
+                <button onClick={() => handleApproveWorker(worker._id)} className="rounded-full bg-emerald-400 px-4 py-2 text-slate-950">Approve Worker</button>
               </div>
             </div>
           ))}
@@ -73,6 +175,69 @@ function AdminDashboard() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {selectedApplication && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4">
+          <div className="w-full max-w-3xl rounded-3xl border border-white/10 bg-slate-900 p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-2xl font-semibold text-white">Application Review</h3>
+                <p className="mt-1 text-slate-300">{selectedApplication.userId?.name} ({selectedApplication.userId?.email})</p>
+                <p className="mt-1 text-slate-400">Role: {selectedApplication.category} | Area: {selectedApplication.location} | Age: {selectedApplication.age || "NA"}</p>
+              </div>
+              <button onClick={() => setSelectedApplication(null)} className="rounded-full border border-white/20 px-3 py-1 text-slate-200">Close</button>
+            </div>
+
+            <div className="mt-4 rounded-2xl bg-white/5 p-4 text-slate-300">
+              <p className="text-sm text-slate-400">Bio</p>
+              <p className="mt-2">{selectedApplication.bio || "No bio provided."}</p>
+            </div>
+
+            <div className="mt-5">
+              <h4 className="text-lg font-semibold text-white">Uploaded Documents</h4>
+              {selectedApplication.documents?.length === 0 && (
+                <p className="mt-3 text-slate-400">No documents uploaded yet.</p>
+              )}
+              {selectedApplication.documents?.length > 0 && (
+                <div className="mt-3 space-y-3">
+                  {selectedApplication.documents.map((doc) => (
+                    <div key={doc._id} className="rounded-2xl bg-white/5 p-4 text-sm text-slate-300">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="capitalize">{doc.documentType.replace("_", " ")}</p>
+                          <p className="mt-1">Status: <span className="capitalize">{doc.status}</span></p>
+                          {doc.reviewNote && <p className="mt-1 text-rose-300">Note: {doc.reviewNote}</p>}
+                        </div>
+                        <div className="flex gap-2">
+                          {doc.downloadUrl && (
+                            <a href={doc.downloadUrl} target="_blank" rel="noreferrer" className="rounded-full border border-cyan-300/50 px-3 py-1 text-cyan-200">View</a>
+                          )}
+                          <button onClick={() => handleApproveDocument(doc._id)} className="rounded-full bg-emerald-400 px-3 py-1 text-slate-950">Approve</button>
+                          <button onClick={() => handleRejectDocument(doc._id)} className="rounded-full bg-rose-400 px-3 py-1 text-slate-950">Reject</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-white/10 p-4">
+              <label className="text-sm text-slate-300">Rejection reason (required to reject worker)</label>
+              <textarea
+                value={rejectReason}
+                onChange={(event) => setRejectReason(event.target.value)}
+                placeholder="Enter reason for rejection"
+                className="mt-2 min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950 px-3 py-2"
+              />
+              <div className="mt-3 flex flex-wrap gap-3">
+                <button onClick={() => handleApproveWorker(selectedApplication._id)} className="rounded-full bg-emerald-400 px-4 py-2 text-slate-950">Approve Worker</button>
+                <button onClick={() => handleRejectWorker(selectedApplication._id)} className="rounded-full bg-rose-400 px-4 py-2 text-slate-950">Reject Worker</button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

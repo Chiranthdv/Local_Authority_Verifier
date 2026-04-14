@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import api from "../lib/api";
+import { connectRealtime, disconnectRealtime } from "../lib/realtime";
+import { toast } from "react-toastify";
 
 const AuthContext = createContext(null);
 
@@ -42,6 +44,52 @@ export function AuthProvider({ children }) {
     refreshUser();
   }, [token]);
 
+  useEffect(() => {
+    if (!token) {
+      disconnectRealtime();
+      return;
+    }
+
+    const socket = connectRealtime(token);
+    if (!socket) {
+      return;
+    }
+
+    const handleNewNotification = (notification) => {
+      window.dispatchEvent(new CustomEvent("app:notification:new", { detail: notification }));
+      if (notification?.title) {
+        toast.info(notification.title, { autoClose: 2000 });
+      }
+    };
+
+    const handleBookingUpdate = (update) => {
+      window.dispatchEvent(new CustomEvent("app:booking:update", { detail: update }));
+    };
+
+    const handleChatMessage = (message) => {
+      window.dispatchEvent(new CustomEvent("app:chat:message", { detail: message }));
+      if (message?.text) {
+        toast.info(`New message: ${String(message.text).slice(0, 40)}`, { autoClose: 1500 });
+      }
+    };
+
+    const handleChatRead = (payload) => {
+      window.dispatchEvent(new CustomEvent("app:chat:read", { detail: payload }));
+    };
+
+    socket.on("notification:new", handleNewNotification);
+    socket.on("booking:update", handleBookingUpdate);
+    socket.on("chat:message", handleChatMessage);
+    socket.on("chat:read", handleChatRead);
+
+    return () => {
+      socket.off("notification:new", handleNewNotification);
+      socket.off("booking:update", handleBookingUpdate);
+      socket.off("chat:message", handleChatMessage);
+      socket.off("chat:read", handleChatRead);
+    };
+  }, [token]);
+
   const login = async (nextToken) => {
     localStorage.setItem("token", nextToken);
     setToken(nextToken);
@@ -57,6 +105,7 @@ export function AuthProvider({ children }) {
     }
 
     clearSession();
+    disconnectRealtime();
     setLoading(false);
   };
 
