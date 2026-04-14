@@ -3,10 +3,12 @@ import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
 
+const REQUEST_TIMEOUT_MS = 20000;
+
 const STEPS = [
   { title: "Basic Info", description: "Tell us about yourself" },
   { title: "Role & Category", description: "Your skills and experience" },
-  { title: "Documents", description: "Upload verification documents" },
+  { title: "Certificates", description: "Upload verification certificates (required)" },
   { title: "Review", description: "Confirm and submit" }
 ];
 
@@ -17,7 +19,9 @@ function WorkerOnboarding() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [documents, setDocuments] = useState([]);
+  const [certificates, setCertificates] = useState([]);
+  const [certificateFiles, setCertificateFiles] = useState([]);
+
   const [form, setForm] = useState({
     bio: "",
     skills: "",
@@ -28,16 +32,39 @@ function WorkerOnboarding() {
     location: "",
     phone: ""
   });
-  const [documentFile, setDocumentFile] = useState(null);
-  const [documentType, setDocumentType] = useState("id_proof");
 
-  const loadMyDocuments = async () => {
+  const getErrorMessage = (error, fallbackMessage) => {
+    if (error?.code === "ECONNABORTED") {
+      return "Request timed out. Please check server status and try again.";
+    }
+    if (error?.response?.data?.message) {
+      return error.response.data.message;
+    }
+    if (error?.response?.data?.error) {
+      return error.response.data.error;
+    }
+    if (error?.message) {
+      return error.message;
+    }
+    return fallbackMessage;
+  };
+
+  const syncDocumentState = (items) => {
+    const list = Array.isArray(items) ? items : [];
+    const certificateDocuments = list.filter((doc) => doc.documentType === "certificate");
+    setCertificates(certificateDocuments);
+  };
+
+  const loadWorkerDocuments = async () => {
     try {
-      const { data } = await api.get("/documents/my");
-      setDocuments(Array.isArray(data) ? data : []);
+      const workerUserId = user?._id;
+      const response = workerUserId
+        ? await api.get(`/documents/${workerUserId}`)
+        : await api.get("/documents/my");
+      syncDocumentState(response.data);
     } catch (error) {
       console.error("Failed to load documents:", error);
-      setDocuments([]);
+      syncDocumentState([]);
     }
   };
 
@@ -64,17 +91,68 @@ function WorkerOnboarding() {
 
   useEffect(() => {
     loadExistingProfile();
-    loadMyDocuments();
   }, []);
+
+  useEffect(() => {
+    loadWorkerDocuments();
+  }, [user?._id]);
+
+  const buildWorkerPayload = () => ({
+    ...form,
+    skills: form.skills.split(",").map((skill) => skill.trim()).filter(Boolean),
+    hourlyRate: Number(form.hourlyRate) || 0,
+    age: Number(form.age),
+    experience: Number(form.experience)
+  });
+
+  const ensureProfileExists = async () => {
+    if (profileId) {
+      return profileId;
+    }
+
+    const payload = buildWorkerPayload();
+    console.log("[ONBOARDING] Creating worker profile before upload", payload);
+
+    try {
+      const { data } = await api.post("/workers/profile", payload, { timeout: REQUEST_TIMEOUT_MS });
+      console.log("[ONBOARDING] Worker profile created", data);
+      setProfileId(data?._id || "");
+      return data?._id || "";
+    } catch (error) {
+      console.error("[ONBOARDING] Worker profile create failed", {
+        message: error?.message,
+        code: error?.code,
+        status: error?.response?.status,
+        data: error?.response?.data
+      });
+
+      throw error;
+    }
+  };
 
   const validateStep = (step) => {
     switch (step) {
       case 0:
-        return form.age && form.location && form.phone;
+        if (!form.age || !form.location || !form.phone) {
+          setMessage("Please fill in Age, Location, and Phone number.");
+          return false;
+        }
+        setMessage("");
+        return true;
       case 1:
-        return form.category && form.experience && form.hourlyRate && form.bio;
+        if (!form.category || !form.experience || !form.hourlyRate || !form.bio) {
+          setMessage("Please fill in Category, Experience, Hourly Rate, and Bio.");
+          return false;
+        }
+        setMessage("");
+        return true;
       case 2:
-        return documents.length > 0;
+        if (certificates.length < 1) {
+          setMessage("Please upload at least one certificate before proceeding.");
+          return false;
+        }
+        setMessage("");
+        return true;
       default:
         return true;
     }
@@ -83,8 +161,6 @@ function WorkerOnboarding() {
   const handleNext = () => {
     if (validateStep(currentStep)) {
       setCurrentStep(currentStep + 1);
-    } else {
-      setMessage("Please fill all required fields.");
     }
   };
 
@@ -97,51 +173,89 @@ function WorkerOnboarding() {
     setMessage("");
 
     try {
-      const payload = {
-        ...form,
-        skills: form.skills.split(",").map((skill) => skill.trim()).filter(Boolean),
-        hourlyRate: Number(form.hourlyRate) || 0,
-        age: Number(form.age),
-        experience: Number(form.experience)
-      };
+      const profileData = buildWorkerPayload();
+      console.log("[ONBOARDING] Submitting worker profile", profileData);
 
-      if (profileId) {
-        await api.patch(`/workers/${profileId}`, payload);
-        setMessage("Profile updated successfully!");
-      } else {
-        const { data } = await api.post("/workers", payload);
+      const { data } = await api.post("/workers/profile", profileData, { timeout: REQUEST_TIMEOUT_MS });
+      console.log("[ONBOARDING] Worker profile submit success", data);
+
+      if (data?._id) {
         setProfileId(data._id);
-        setMessage("Profile created successfully!");
       }
+      setMessage("Profile submitted successfully!");
     } catch (error) {
-      setMessage(error.response?.data?.error || "Could not save profile.");
+      console.error("[ONBOARDING] Worker profile submit failed", {
+        message: error?.message,
+        code: error?.code,
+        status: error?.response?.status,
+        data: error?.response?.data
+      });
+      setMessage(getErrorMessage(error, "Could not save profile."));
     } finally {
       setLoading(false);
     }
   };
 
-  const submitDocument = async () => {
-    if (!documentFile) return;
+  const uploadCertificate = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("documentType", "certificate");
+    formData.append("type", "certificate");
+
+    console.log("[ONBOARDING] Uploading certificate", {
+      name: file?.name,
+      type: file?.type,
+      size: file?.size
+    });
+
+    try {
+      const response = await api.post("/documents/upload", formData, { timeout: REQUEST_TIMEOUT_MS });
+      console.log("[ONBOARDING] Certificate upload success", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("[ONBOARDING] Certificate upload failed", {
+        message: error?.message,
+        code: error?.code,
+        status: error?.response?.status,
+        data: error?.response?.data
+      });
+      throw error;
+    }
+  };
+
+  const submitCertificates = async () => {
+    if (certificateFiles.length === 0) return;
 
     setLoading(true);
     setMessage("");
 
     try {
-      const formData = new FormData();
-      formData.append("file", documentFile);
-      formData.append("documentType", documentType);
-      await api.post("/documents/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
-
-      setDocumentFile(null);
-      await loadMyDocuments();
-      setMessage("Document uploaded!");
+      await ensureProfileExists();
+      for (const file of certificateFiles) {
+        await uploadCertificate(file);
+      }
+      await loadWorkerDocuments();
+      setCertificateFiles([]);
+      setMessage("Certificates uploaded successfully!");
     } catch (error) {
-      setMessage(error.response?.data?.error || "Could not upload document.");
+      setMessage(getErrorMessage(error, "Could not upload certificates."));
     } finally {
       setLoading(false);
     }
+  };
+
+  const removeDocument = async (documentId) => {
+    try {
+      await api.delete(`/documents/${documentId}`);
+      await loadWorkerDocuments();
+      setMessage("Certificate removed successfully!");
+    } catch (error) {
+      setMessage(error.response?.data?.error || "Could not remove certificate.");
+    }
+  };
+
+  const removeCertificateFile = (index) => {
+    setCertificateFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   if (initialLoading) {
@@ -156,33 +270,31 @@ function WorkerOnboarding() {
         <div className="mb-8">
           <h1 className="text-3xl font-semibold text-white">Worker Verification Profile</h1>
           <p className="mt-2 text-slate-400">
-            {user?.name ? `${user.name}, let's get you verified.` : "Let's get you verified."}
+            {user?.name ? `${user.name}, let\'s get you verified.` : "Let\'s get you verified."}
           </p>
         </div>
 
-        {/* Progress Bar */}
         <div className="mb-8">
-          <div className="flex justify-between text-sm text-slate-400 mb-2">
+          <div className="mb-2 flex justify-between text-sm text-slate-400">
             {STEPS.map((step, index) => (
               <span key={index} className={index <= currentStep ? "text-cyan-400" : ""}>
                 {step.title}
               </span>
             ))}
           </div>
-          <div className="w-full bg-slate-700 rounded-full h-2">
+          <div className="h-2 w-full rounded-full bg-slate-700">
             <div
-              className="bg-cyan-400 h-2 rounded-full transition-all duration-300"
+              className="h-2 rounded-full bg-cyan-400 transition-all duration-300"
               style={{ width: `${progressWidth}%` }}
             ></div>
           </div>
           <p className="mt-2 text-slate-300">{STEPS[currentStep].description}</p>
         </div>
 
-        {/* Step Content */}
         <div className="min-h-[400px]">
           {currentStep === 0 && (
             <div>
-              <h2 className="text-xl font-semibold text-white mb-4">Basic Information</h2>
+              <h2 className="mb-4 text-xl font-semibold text-white">Basic Information</h2>
               <div className="grid gap-4">
                 <input
                   type="number"
@@ -209,7 +321,7 @@ function WorkerOnboarding() {
 
           {currentStep === 1 && (
             <div>
-              <h2 className="text-xl font-semibold text-white mb-4">Role & Category</h2>
+              <h2 className="mb-4 text-xl font-semibold text-white">Role & Category</h2>
               <div className="grid gap-4">
                 <select
                   value={form.category}
@@ -256,44 +368,75 @@ function WorkerOnboarding() {
 
           {currentStep === 2 && (
             <div>
-              <h2 className="text-xl font-semibold text-white mb-4">Upload Documents</h2>
-              <p className="text-slate-400 mb-4">Upload ID proof and certificates for verification.</p>
-              <div className="grid gap-4">
-                <select
-                  value={documentType}
-                  onChange={(e) => setDocumentType(e.target.value)}
-                  className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
-                >
-                  <option value="id_proof">ID Proof</option>
-                  <option value="certificate">Certificate</option>
-                </select>
-                <input
-                  type="file"
-                  accept=".pdf,image/png,image/jpeg"
-                  onChange={(e) => setDocumentFile(e.target.files?.[0] || null)}
-                  className="rounded-2xl border border-dashed border-white/20 p-4 bg-slate-900"
-                />
-                <Button
-                  onClick={submitDocument}
-                  disabled={!documentFile || loading}
-                  variant="warning"
-                  size="small"
-                  loading={loading}
-                >
-                  {loading ? "Uploading..." : "Upload Document"}
-                </Button>
-              </div>
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold text-white">Uploaded Documents</h3>
-                {documents.length === 0 && <p className="mt-3 text-slate-400">No documents uploaded yet.</p>}
-                {documents.length > 0 && (
-                  <div className="mt-3 space-y-3">
-                    {documents.map((doc) => (
-                      <div key={doc._id} className="rounded-xl bg-white/5 p-3 text-sm text-slate-300">
-                        <p className="capitalize">{doc.documentType.replace("_", " ")}</p>
-                        <p className="mt-1">Status: <span className="capitalize">{doc.status}</span></p>
-                      </div>
-                    ))}
+              <h2 className="mb-4 text-xl font-semibold text-white">Upload Certificates</h2>
+              <p className="mb-6 text-slate-400">Upload at least one certificate for verification.</p>
+
+              <div>
+                <h3 className="mb-3 flex items-center text-lg font-semibold text-white">
+                  <span className="mr-3 h-2 w-2 rounded-full bg-red-500"></span>
+                  Certificates (Required)
+                </h3>
+                <p className="mb-4 text-sm text-slate-400">Upload certificates, licenses, or qualifications.</p>
+
+                <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-6">
+                  <input
+                    type="file"
+                    accept=".pdf,image/png,image/jpeg"
+                    multiple
+                    onChange={(e) => setCertificateFiles(Array.from(e.target.files || []))}
+                    className="mb-4 w-full rounded-xl border border-dashed border-white/20 bg-slate-800 p-4 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-purple-600 file:px-4 file:py-2 file:text-white hover:file:bg-purple-700"
+                  />
+
+                  {certificateFiles.length > 0 && (
+                    <div className="mb-4 space-y-2">
+                      <p className="text-sm font-medium text-purple-300">Selected Files:</p>
+                      {certificateFiles.map((file, index) => (
+                        <div key={`${file.name}-${index}`} className="flex items-center justify-between rounded border border-purple-500/20 bg-purple-900/20 p-2">
+                          <span className="text-sm text-purple-300">{file.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeCertificateFile(index)}
+                            className="text-sm text-red-400 hover:text-red-300"
+                          >
+                            x
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={submitCertificates}
+                    disabled={certificateFiles.length === 0 || loading}
+                    variant="secondary"
+                    size="small"
+                    className="w-full"
+                  >
+                    {loading ? "Uploading..." : `Upload ${certificateFiles.length} Certificate${certificateFiles.length !== 1 ? "s" : ""}`}
+                  </Button>
+                </div>
+
+                {certificates.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="mb-2 text-sm font-semibold text-white">Uploaded Certificates</h4>
+                    <div className="space-y-2">
+                      {certificates.map((doc) => (
+                        <div key={doc._id} className="flex items-center justify-between rounded-lg border border-purple-500/20 bg-purple-900/20 p-3">
+                          <div>
+                            <p className="text-sm font-medium text-purple-300">{doc.originalName}</p>
+                            <p className="text-xs capitalize text-purple-400">Status: {doc.status}</p>
+                          </div>
+                          <Button
+                            onClick={() => removeDocument(doc._id)}
+                            variant="danger"
+                            size="small"
+                            className="text-xs"
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -302,17 +445,34 @@ function WorkerOnboarding() {
 
           {currentStep === 3 && (
             <div>
-              <h2 className="text-xl font-semibold text-white mb-4">Review Your Profile</h2>
+              <h2 className="mb-4 text-xl font-semibold text-white">Review Your Profile</h2>
               <div className="space-y-4 text-slate-300">
-                <p><strong>Age:</strong> {form.age}</p>
-                <p><strong>Location:</strong> {form.location}</p>
-                <p><strong>Phone:</strong> {form.phone}</p>
-                <p><strong>Category:</strong> {form.category}</p>
-                <p><strong>Experience:</strong> {form.experience} years</p>
-                <p><strong>Hourly Rate:</strong> Rs {form.hourlyRate}</p>
-                <p><strong>Skills:</strong> {form.skills}</p>
-                <p><strong>Bio:</strong> {form.bio}</p>
-                <p><strong>Documents:</strong> {documents.length} uploaded</p>
+                <div>
+                  <p><strong>Age:</strong> {form.age}</p>
+                  <p><strong>Location:</strong> {form.location}</p>
+                  <p><strong>Phone:</strong> {form.phone}</p>
+                </div>
+
+                <div>
+                  <p><strong>Category:</strong> {form.category}</p>
+                  <p><strong>Experience:</strong> {form.experience} years</p>
+                  <p><strong>Hourly Rate:</strong> Rs {form.hourlyRate}</p>
+                </div>
+
+                <div>
+                  <p><strong>Skills:</strong> {form.skills}</p>
+                  <p><strong>Bio:</strong> {form.bio}</p>
+                </div>
+
+                <div>
+                  <p className="mb-2"><strong>Documents:</strong></p>
+                  <div className="ml-4 space-y-2">
+                    <div className="flex items-center">
+                      <span className={`mr-2 h-2 w-2 rounded-full ${certificates.length > 0 ? "bg-blue-500" : "bg-red-500"}`}></span>
+                      <span>Certificates: {certificates.length} uploaded</span>
+                    </div>
+                  </div>
+                </div>
               </div>
               <Button
                 onClick={submitProfile}
@@ -327,7 +487,6 @@ function WorkerOnboarding() {
           )}
         </div>
 
-        {/* Navigation Buttons */}
         <div className="mt-8 flex justify-between">
           <Button
             onClick={handleBack}
@@ -348,7 +507,11 @@ function WorkerOnboarding() {
           ) : null}
         </div>
 
-        {message && <p className="mt-6 text-slate-200">{message}</p>}
+        {message && (
+          <p className={`mt-6 rounded-2xl border px-4 py-3 ${message.includes("Please") ? "border-rose-300/30 bg-rose-500/10 text-rose-300" : "border-emerald-300/30 bg-emerald-500/10 text-emerald-300"}`}>
+            {message}
+          </p>
+        )}
       </div>
     </div>
   );

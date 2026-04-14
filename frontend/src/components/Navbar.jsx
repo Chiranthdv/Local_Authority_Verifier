@@ -1,24 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
 function Navbar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
     navigate("/login");
-    setProfileDropdownOpen(false);
-  };
-
-  const toggleProfileDropdown = () => {
-    setProfileDropdownOpen(!profileDropdownOpen);
-  };
-
-  const closeDropdown = () => {
-    setProfileDropdownOpen(false);
   };
 
   return (
@@ -44,58 +33,26 @@ function Navbar() {
               <Link to="/search" className="rounded-full bg-cyan-500 px-4 py-2 font-medium text-slate-950">
                 Find Workers
               </Link>
-              <Link to="/requests/my" className="rounded-full px-4 py-2 hover:bg-white/5">My Requests</Link>
-              <div className="relative">
-                <button onClick={toggleProfileDropdown} className="rounded-full px-4 py-2 hover:bg-white/5">
-                  Profile ▼
-                </button>
-                {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-lg border border-white/10 bg-slate-900 shadow-lg">
-                    <Link to="/chats" onClick={closeDropdown} className="block px-4 py-2 hover:bg-white/5">Chats</Link>
-                    <Link to="/notifications" onClick={closeDropdown} className="block px-4 py-2 hover:bg-white/5">Notifications</Link>
-                    <button onClick={handleLogout} className="block w-full px-4 py-2 text-left hover:bg-white/5">Logout</button>
-                  </div>
-                )}
-              </div>
+              <button onClick={handleLogout} className="rounded-full px-4 py-2 hover:bg-white/5">Logout</button>
             </>
           )}
 
           {user?.role === "worker" && (
             <>
-              <Link to="/search" className="rounded-full bg-cyan-500 px-4 py-2 font-medium text-slate-950">
-                Find Jobs
+              <Link to="/worker/onboarding" className="rounded-full bg-cyan-500 px-4 py-2 font-medium text-slate-950">
+                Dashboard
               </Link>
-              <Link to="/requests/inbox" className="rounded-full px-4 py-2 hover:bg-white/5">Request Inbox</Link>
-              <div className="relative">
-                <button onClick={toggleProfileDropdown} className="rounded-full px-4 py-2 hover:bg-white/5">
-                  Profile ▼
-                </button>
-                {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-lg border border-white/10 bg-slate-900 shadow-lg">
-                    <Link to="/worker/onboarding" onClick={closeDropdown} className="block px-4 py-2 hover:bg-white/5">My Profile</Link>
-                    <Link to="/chats" onClick={closeDropdown} className="block px-4 py-2 hover:bg-white/5">Chats</Link>
-                    <Link to="/notifications" onClick={closeDropdown} className="block px-4 py-2 hover:bg-white/5">Notifications</Link>
-                    <button onClick={handleLogout} className="block w-full px-4 py-2 text-left hover:bg-white/5">Logout</button>
-                  </div>
-                )}
-              </div>
+              <Link to="/requests/inbox" className="rounded-full px-4 py-2 hover:bg-white/5">Requests</Link>
+              <button onClick={handleLogout} className="rounded-full px-4 py-2 hover:bg-white/5">Logout</button>
             </>
           )}
 
           {user?.role === "admin" && (
             <>
-              <Link to="/admin/dashboard" className="rounded-full px-4 py-2 hover:bg-white/5">Admin Dashboard</Link>
-              <div className="relative">
-                <button onClick={toggleProfileDropdown} className="rounded-full px-4 py-2 hover:bg-white/5">
-                  Profile ▼
-                </button>
-                {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-lg border border-white/10 bg-slate-900 shadow-lg">
-                    <Link to="/notifications" onClick={closeDropdown} className="block px-4 py-2 hover:bg-white/5">Notifications</Link>
-                    <button onClick={handleLogout} className="block w-full px-4 py-2 text-left hover:bg-white/5">Logout</button>
-                  </div>
-                )}
-              </div>
+              <Link to="/admin/dashboard" className="rounded-full bg-cyan-500 px-4 py-2 font-medium text-slate-950">
+                Admin Dashboard
+              </Link>
+              <button onClick={handleLogout} className="rounded-full px-4 py-2 hover:bg-white/5">Logout</button>
             </>
           )}
         </nav>

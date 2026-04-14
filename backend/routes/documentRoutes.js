@@ -10,7 +10,7 @@ const auth = require("../middleware/auth");
 const role = require("../middleware/role");
 const { buildSignedDocumentUrl, verifyDocumentAccessToken } = require("../utils/documentAccess");
 
-const ALLOWED_DOCUMENT_TYPES = new Set(["id_proof", "certificate"]);
+const ALLOWED_DOCUMENT_TYPES = new Set(["certificate"]);
 const UPLOADS_ROOT = path.resolve(path.join(__dirname, "..", "uploads"));
 
 function isValidObjectId(id) {
@@ -55,18 +55,42 @@ function resolveDocumentPath(fileUrl) {
 
 router.post("/upload", auth, role("worker"), upload.single("file"), async (req, res) => {
   try {
+    console.log("[DOCUMENT UPLOAD] Request received");
+    console.log("[DOCUMENT UPLOAD] req.file raw:", req.file);
+    console.log("[DOCUMENT UPLOAD] File:", req.file ? {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      path: req.file.path
+    } : "No file received");
+    console.log("[DOCUMENT UPLOAD] Body:", req.body);
+
     if (!req.file) {
+      console.log("[DOCUMENT UPLOAD] No file provided");
       return res.status(400).json({ error: "Document file is required" });
     }
 
-    const { documentType } = req.body;
+    const documentType = req.body?.documentType || req.body?.type;
     if (!ALLOWED_DOCUMENT_TYPES.has(documentType)) {
-      return res.status(400).json({ error: "documentType must be id_proof or certificate" });
+      return res.status(400).json({ error: "documentType must be certificate" });
     }
 
-    const workerProfile = await WorkerProfile.findOne({ userId: req.user.userId, isDeleted: false }).select("_id verificationStatus");
+    let workerProfile = await WorkerProfile.findOne({ userId: req.user.userId }).select("_id verificationStatus isDeleted");
     if (!workerProfile) {
-      return res.status(400).json({ error: "Create worker profile before uploading documents" });
+      console.log("[DOCUMENT UPLOAD] Worker profile missing. Creating draft profile before upload.");
+      workerProfile = await WorkerProfile.create({
+        userId: req.user.userId,
+        verificationStatus: "pending",
+        rejectionReason: ""
+      });
+      console.log("[DOCUMENT UPLOAD] Draft worker profile created:", String(workerProfile._id));
+    } else if (workerProfile.isDeleted) {
+      workerProfile.isDeleted = false;
+      workerProfile.deletedAt = null;
+      workerProfile.verificationStatus = "pending";
+      workerProfile.rejectionReason = "";
+      await workerProfile.save();
+      console.log("[DOCUMENT UPLOAD] Revived soft-deleted worker profile:", String(workerProfile._id));
     }
 
     const doc = await Document.create({
@@ -88,6 +112,11 @@ router.post("/upload", auth, role("worker"), upload.single("file"), async (req, 
 
     res.status(201).json(toDocumentResponse(req, doc, "owner_access", req.user.userId));
   } catch (err) {
+    console.error("[DOCUMENT UPLOAD] Error:", {
+      message: err.message,
+      code: err.code,
+      stack: err.stack
+    });
     res.status(500).json({ error: "Could not upload document" });
   }
 });
@@ -111,6 +140,24 @@ router.get("/worker/:workerUserId", auth, role("admin"), async (req, res) => {
     res.json(documents.map((doc) => toDocumentResponse(req, doc, "admin_access", req.user.userId)));
   } catch (err) {
     res.status(500).json({ error: "Could not load worker documents" });
+  }
+});
+
+router.get("/:workerId", auth, role("worker", "admin"), async (req, res) => {
+  try {
+    if (!isValidObjectId(req.params.workerId)) {
+      return res.status(400).json({ error: "Invalid worker id" });
+    }
+
+    if (req.user.role === "worker" && String(req.params.workerId) !== String(req.user.userId)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const scope = req.user.role === "admin" ? "admin_access" : "owner_access";
+    const documents = await Document.find({ userId: req.params.workerId }).sort({ createdAt: -1 });
+    return res.json(documents.map((doc) => toDocumentResponse(req, doc, scope, req.user.userId)));
+  } catch (err) {
+    return res.status(500).json({ error: "Could not load worker documents" });
   }
 });
 
@@ -247,6 +294,37 @@ router.patch("/:id/reject", auth, role("admin"), async (req, res) => {
     res.json(toDocumentResponse(req, doc, "admin_access", req.user.userId));
   } catch (err) {
     res.status(500).json({ error: "Could not reject document" });
+  }
+});
+
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: "Invalid document id" });
+    }
+
+    const doc = await Document.findOne({ _id: req.params.id, userId: req.user.userId });
+    if (!doc) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
+    // Only allow deletion of pending documents
+    if (doc.status !== "pending") {
+      return res.status(403).json({ error: "Cannot delete approved or rejected documents" });
+    }
+
+    // Delete the physical file
+    const absolutePath = resolveDocumentPath(doc.fileUrl);
+    if (absolutePath && fs.existsSync(absolutePath)) {
+      fs.unlinkSync(absolutePath);
+    }
+
+    // Delete from database
+    await Document.findByIdAndDelete(req.params.id);
+
+    res.json({ message: "Document deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Could not delete document" });
   }
 });
 

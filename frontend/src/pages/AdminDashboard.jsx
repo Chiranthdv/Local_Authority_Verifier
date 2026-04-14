@@ -7,21 +7,25 @@ function AdminDashboard() {
   const [tab, setTab] = useState("pending");
   const [pendingWorkers, setPendingWorkers] = useState([]);
   const [users, setUsers] = useState([]);
+  const [dashboardStats, setDashboardStats] = useState(null);
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [loadingApplication, setLoadingApplication] = useState(false);
+  const [loadingApplicationWorkerId, setLoadingApplicationWorkerId] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [error, setError] = useState("");
 
   const loadDashboardData = async () => {
     try {
-      const [workersRes, usersRes] = await Promise.all([
-        api.get("/workers/pending"),
+      const [adminRes, usersRes] = await Promise.all([
+        api.get("/admin/dashboard"),
         api.get("/users")
       ]);
-      setPendingWorkers(workersRes.data || []);
+      setPendingWorkers(adminRes.data?.pendingApplications || []);
+      setDashboardStats(adminRes.data?.stats || null);
       setUsers(usersRes.data || []);
     } catch (loadError) {
       setPendingWorkers([]);
+      setDashboardStats(null);
       setUsers([]);
     }
   };
@@ -32,6 +36,7 @@ function AdminDashboard() {
 
   const openApplication = async (workerId) => {
     setLoadingApplication(true);
+    setLoadingApplicationWorkerId(workerId);
     setError("");
     setRejectReason("");
     try {
@@ -42,6 +47,7 @@ function AdminDashboard() {
       setSelectedApplication(null);
     } finally {
       setLoadingApplication(false);
+      setLoadingApplicationWorkerId("");
     }
   };
 
@@ -74,12 +80,17 @@ function AdminDashboard() {
 
   const handleApproveWorker = async (workerId) => {
     try {
-      await api.patch(`/workers/${workerId}/approve`);
+      await api.put(`/admin/approve/${workerId}`);
       setPendingWorkers((current) => current.filter((worker) => worker._id !== workerId));
       setSelectedApplication(null);
       await loadDashboardData();
     } catch (actionError) {
-      setError(actionError.response?.data?.error || "Could not approve worker.");
+      setError(
+        actionError.response?.data?.message ||
+        actionError.response?.data?.error ||
+        actionError.message ||
+        "Could not approve worker."
+      );
     }
   };
 
@@ -103,7 +114,7 @@ function AdminDashboard() {
     try {
       await api.delete(`/users/${id}`);
       setUsers((current) => current.filter((user) => user._id !== id));
-      setPendingWorkers((current) => current.filter((worker) => worker.userId?._id !== id));
+      setPendingWorkers((current) => current.filter((worker) => worker.workerUserId !== id));
       if (selectedApplication?.userId?._id === id) {
         setSelectedApplication(null);
       }
@@ -114,6 +125,27 @@ function AdminDashboard() {
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
+      {dashboardStats && (
+        <div className="mb-6 grid gap-3 md:grid-cols-4">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Pending Workers</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{dashboardStats.workerVerification?.pending || 0}</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Approved Workers</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{dashboardStats.workerVerification?.approved || 0}</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Pending Documents</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{dashboardStats.documents?.pending || 0}</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Open Jobs</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{dashboardStats.jobs?.open || 0}</p>
+          </div>
+        </div>
+      )}
+
       <div className="mb-6 flex gap-3">
         <Button
           onClick={() => setTab("pending")}
@@ -139,8 +171,8 @@ function AdminDashboard() {
             <div key={worker._id} className="rounded-3xl border border-white/10 bg-white/5 p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-semibold text-white">{worker.userId?.name}</h2>
-                  <p className="mt-1 text-slate-300">{worker.category} • {worker.location}</p>
+                  <h2 className="text-xl font-semibold text-white">{worker.name || "Worker"}</h2>
+                  <p className="mt-1 text-slate-300">{worker.category} | {worker.location}</p>
                   <p className="mt-1 text-slate-400">Age: {worker.age || "NA"} | Experience: {worker.experience || 0} years</p>
                   <p className="mt-2 text-slate-400">{worker.bio || "No bio provided."}</p>
                 </div>
@@ -156,9 +188,9 @@ function AdminDashboard() {
                   onClick={() => openApplication(worker._id)}
                   variant="secondary"
                   size="small"
-                  disabled={loadingApplication && selectedApplication?._id !== worker._id}
+                  disabled={loadingApplication && loadingApplicationWorkerId === worker._id}
                 >
-                  {loadingApplication && selectedApplication?._id !== worker._id ? "Loading..." : "Open Application"}
+                  {loadingApplication && loadingApplicationWorkerId === worker._id ? "Loading..." : "View Application"}
                 </Button>
                 <Button
                   onClick={() => handleApproveWorker(worker._id)}
@@ -302,3 +334,4 @@ function AdminDashboard() {
 }
 
 export default AdminDashboard;
+

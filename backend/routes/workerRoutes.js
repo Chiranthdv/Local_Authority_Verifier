@@ -56,8 +56,150 @@ function parseAge(value) {
   return Math.round(parsed);
 }
 
+function parseNonNegativeNumber(value) {
+  if (value === undefined || value === null || value === "") return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return null;
+  return parsed;
+}
+
 function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeSkills(skills) {
+  if (!Array.isArray(skills)) {
+    return [];
+  }
+  return skills
+    .map((skill) => sanitizeText(skill))
+    .filter(Boolean);
+}
+
+function validateProfilePayload(body) {
+  const requiredChecks = [
+    { key: "category", valid: Boolean(sanitizeText(body?.category)) },
+    { key: "location", valid: Boolean(sanitizeText(body?.location || body?.area)) },
+    { key: "phone", valid: Boolean(sanitizeText(body?.phone)) }
+  ];
+
+  const age = parseAge(body?.age);
+  const experience = parseNonNegativeNumber(body?.experience);
+  const hourlyRate = parseNonNegativeNumber(body?.hourlyRate);
+
+  if (age === undefined) {
+    return { valid: false, error: "Missing required fields: age" };
+  }
+
+  if (experience === undefined) {
+    return { valid: false, error: "Missing required fields: experience" };
+  }
+
+  if (age === null) {
+    return { valid: false, error: "Age must be between 18 and 80" };
+  }
+
+  if (experience === null) {
+    return { valid: false, error: "Experience must be a non-negative number" };
+  }
+
+  if (hourlyRate === null) {
+    return { valid: false, error: "Hourly rate must be a non-negative number" };
+  }
+
+  const missingFields = requiredChecks.filter((field) => !field.valid).map((field) => field.key);
+  if (missingFields.length > 0) {
+    return { valid: false, error: `Missing required fields: ${missingFields.join(", ")}` };
+  }
+
+  const category = sanitizeText(body?.category).toLowerCase();
+  if (!ALLOWED_CATEGORIES.has(category)) {
+    return { valid: false, error: "Invalid category" };
+  }
+
+  return {
+    valid: true,
+    payload: {
+      age,
+      category,
+      experience: experience ?? 0,
+      hourlyRate: hourlyRate ?? 0,
+      location: sanitizeText(body?.location || body?.area),
+      phone: sanitizeText(body?.phone),
+      bio: sanitizeText(body?.bio),
+      skills: normalizeSkills(body?.skills)
+    }
+  };
+}
+
+async function createOrUpdateOwnProfile(req, res) {
+  try {
+    if (!req.user?.userId) {
+      return res.status(401).json({ error: "Unauthorized: userId missing in token" });
+    }
+
+    console.log("[WORKER PROFILE] createOrUpdateOwnProfile called", {
+      userId: req.user.userId,
+      role: req.user.role,
+      body: req.body
+    });
+
+    const validation = validateProfilePayload(req.body);
+    if (!validation.valid) {
+      console.log("[WORKER PROFILE] Validation failed", {
+        userId: req.user.userId,
+        error: validation.error
+      });
+      return res.status(400).json({ error: validation.error, message: validation.error });
+    }
+
+    // Upsert prevents duplicate-profile races and revives soft-deleted profiles.
+    const profile = await WorkerProfile.findOneAndUpdate(
+      { userId: req.user.userId },
+      {
+        $set: {
+          ...validation.payload,
+          verificationStatus: "pending",
+          rejectionReason: "",
+          isDeleted: false,
+          deletedAt: null
+        },
+        $setOnInsert: {
+          userId: req.user.userId,
+          trustScore: 0
+        }
+      },
+      {
+        upsert: true,
+        new: true,
+        runValidators: true,
+        setDefaultsOnInsert: true
+      }
+    );
+
+    console.log("[WORKER PROFILE] Upsert success", {
+      userId: req.user.userId,
+      profileId: String(profile?._id || "")
+    });
+
+    return res.status(201).json(profile);
+  } catch (error) {
+    if (error?.name === "ValidationError") {
+      const message = Object.values(error.errors || {})[0]?.message || "Invalid profile data";
+      console.error("[WORKER PROFILE] ValidationError during save", {
+        userId: req.user?.userId,
+        message
+      });
+      return res.status(400).json({ error: message, message });
+    }
+
+    console.error("[WORKER PROFILE] createOrUpdateOwnProfile failed", {
+      userId: req.user?.userId,
+      message: error.message,
+      code: error.code
+    });
+    return res.status(500).json({ error: "Could not create worker profile", message: "Could not create worker profile" });
+  }
 }
 
 function normalizeSearchText(value) {
@@ -219,7 +361,7 @@ async function getPublicWorkers(req, res) {
     const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
     const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 24, 1), 50);
     const skip = (page - 1) * limit;
-    const query = { verificationStatus: "approved", isDeleted: false };
+    const query = { verificationStatus: "approved", isDeleted: { $ne: true } };
 
     if (categoryFilter) {
       if (!ALLOWED_CATEGORIES.has(categoryFilter)) {
@@ -287,7 +429,7 @@ router.get("/public/:workerRef", async (req, res) => {
     const worker = await WorkerProfile.findOne({
       publicRef: workerRef,
       verificationStatus: "approved",
-      isDeleted: false
+      isDeleted: { $ne: true }
     }).populate({ path: "userId", select: "name", match: { isDeleted: false } });
 
     if (!worker || !hasLinkedUser(worker)) {
@@ -321,7 +463,7 @@ router.get("/private/:workerRef", auth, role("customer", "admin", "worker"), asy
     const worker = await WorkerProfile.findOne({
       publicRef: workerRef,
       verificationStatus: "approved",
-      isDeleted: false
+      isDeleted: { $ne: true }
     }).populate({ path: "userId", select: "name email", match: { isDeleted: false } });
 
     if (!worker || !hasLinkedUser(worker)) {
@@ -373,7 +515,7 @@ router.get("/:id", auth, role("customer", "admin", "worker"), async (req, res) =
       return res.status(400).json({ error: "Invalid worker id" });
     }
 
-    const worker = await WorkerProfile.findOne({ _id: req.params.id, isDeleted: false })
+    const worker = await WorkerProfile.findOne({ _id: req.params.id, isDeleted: { $ne: true } })
       .populate({ path: "userId", select: "name email", match: { isDeleted: false } });
 
     if (!worker || !hasLinkedUser(worker) || worker.verificationStatus !== "approved") {
@@ -413,39 +555,8 @@ router.get("/:id", auth, role("customer", "admin", "worker"), async (req, res) =
   }
 });
 
-router.post("/", auth, role("worker"), async (req, res) => {
-  try {
-    const existing = await WorkerProfile.findOne({ userId: req.user.userId, isDeleted: false });
-
-    if (existing) {
-      return res.status(409).json({ error: "Worker profile already exists" });
-    }
-
-    const age = parseAge(req.body.age);
-    if (age === null) {
-      return res.status(400).json({ error: "Age must be between 18 and 80" });
-    }
-
-    const profile = new WorkerProfile({
-      userId: req.user.userId,
-      age,
-      bio: sanitizeText(req.body.bio),
-      skills: Array.isArray(req.body.skills) ? req.body.skills : [],
-      hourlyRate: req.body.hourlyRate,
-      category: req.body.category,
-      location: sanitizeText(req.body.location || req.body.area),
-      phone: sanitizeText(req.body.phone),
-      experience: req.body.experience || 0,
-      verificationStatus: "pending",
-      rejectionReason: ""
-    });
-
-    await profile.save();
-    res.status(201).json(profile);
-  } catch (err) {
-    res.status(500).json({ error: "Could not create worker profile" });
-  }
-});
+router.post("/", auth, role("worker"), createOrUpdateOwnProfile);
+router.post("/profile", auth, role("worker"), createOrUpdateOwnProfile);
 
 router.patch("/:id", auth, role("worker"), async (req, res) => {
   try {
@@ -518,6 +629,11 @@ router.post("/:id/photo", auth, role("worker"), upload.single("file"), async (re
 
 router.patch("/:id/approve", auth, role("admin"), async (req, res) => {
   try {
+    console.log("[WORKER APPROVE] Incoming request", {
+      workerProfileId: req.params.id,
+      adminUserId: req.user?.userId
+    });
+
     const worker = await WorkerProfile.findOne({ _id: req.params.id, isDeleted: false });
 
     if (!worker) {
@@ -526,12 +642,11 @@ router.patch("/:id/approve", auth, role("admin"), async (req, res) => {
 
     const docs = await Document.find({ userId: worker.userId });
     const hasCertificate = docs.some((doc) => doc.documentType === "certificate");
-    const hasIdProof = docs.some((doc) => doc.documentType === "id_proof");
     const hasRejectedDoc = docs.some((doc) => doc.status === "rejected");
     const hasPendingDoc = docs.some((doc) => doc.status === "pending");
 
-    if (!hasCertificate || !hasIdProof) {
-      return res.status(400).json({ error: "Worker must upload certificate and id proof before approval" });
+    if (!hasCertificate) {
+      return res.status(400).json({ error: "Worker must upload at least one certificate before approval" });
     }
 
     if (hasRejectedDoc || hasPendingDoc) {
@@ -542,12 +657,36 @@ router.patch("/:id/approve", auth, role("admin"), async (req, res) => {
     worker.rejectionReason = "";
     worker.verifiedBy = req.user.userId;
     worker.verifiedAt = new Date();
-    worker.trustScore = await calculateTrustScore(worker.userId);
+
+    try {
+      const trustScore = await calculateTrustScore(worker.userId);
+      worker.trustScore = Number.isFinite(trustScore) ? trustScore : 0;
+    } catch (trustError) {
+      console.error("[WORKER APPROVE] Trust score calculation failed", {
+        workerProfileId: req.params.id,
+        workerUserId: String(worker.userId),
+        message: trustError.message
+      });
+      // Trust score should not block the approval flow.
+      worker.trustScore = Number.isFinite(worker.trustScore) ? worker.trustScore : 0;
+    }
+
     await worker.save();
+
+    console.log("[WORKER APPROVE] Success", {
+      workerProfileId: req.params.id,
+      workerUserId: String(worker.userId),
+      trustScore: worker.trustScore
+    });
 
     res.json({ ...worker.toObject(), badgeLevel: getBadgeLevel(worker.trustScore) });
   } catch (err) {
-    res.status(500).json({ error: "Could not approve worker" });
+    console.error("[WORKER APPROVE] Failed", {
+      workerProfileId: req.params.id,
+      message: err.message,
+      code: err.code
+    });
+    res.status(500).json({ error: "Could not approve worker", message: err.message || "Could not approve worker" });
   }
 });
 

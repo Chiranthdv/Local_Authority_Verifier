@@ -2,6 +2,10 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
 module.exports = async (req, res, next) => {
+  if (typeof next !== "function") {
+    return res.status(500).json({ error: "Auth middleware misconfigured", message: "next is not a function" });
+  }
+
   const token = req.headers.authorization?.split(" ")[1];
 
   if (!token) {
@@ -17,8 +21,8 @@ module.exports = async (req, res, next) => {
     }
 
     req.user = { userId: String(user._id), role: user.role };
-    next();
+    return next();
   } catch (error) {
-    res.status(401).json({ error: "Invalid token" });
+    return res.status(401).json({ error: "Invalid token" });
   }
 };

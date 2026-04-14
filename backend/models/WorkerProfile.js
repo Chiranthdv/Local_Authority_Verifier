@@ -90,9 +90,8 @@ const workerProfileSchema = new mongoose.Schema({
 workerProfileSchema.index({ verificationStatus: 1, createdAt: -1 });
 workerProfileSchema.index({ category: 1, searchLocation: 1, verificationStatus: 1, createdAt: -1 });
 
-workerProfileSchema.pre("save", function(next) {
+workerProfileSchema.pre("save", function() {
   this.searchLocation = typeof this.location === "string" ? this.location.trim().toLowerCase() : "";
-  next();
 });
 
 module.exports = mongoose.model("WorkerProfile", workerProfileSchema);

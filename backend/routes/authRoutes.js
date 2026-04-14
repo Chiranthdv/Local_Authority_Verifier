@@ -109,6 +109,24 @@ router.post("/register", async (req, res) => {
     await user.save();
     console.log("[REGISTER] User created successfully:", user._id);
 
+    // Auto-create worker profile for workers
+    if (role === "worker") {
+      try {
+        console.log("[REGISTER] Creating worker profile for user:", user._id);
+        const workerProfile = new WorkerProfile({
+          userId: user._id,
+          verificationStatus: "pending",
+          rejectionReason: "",
+          trustScore: 0
+        });
+        await workerProfile.save();
+        console.log("[REGISTER] Worker profile created successfully:", workerProfile._id);
+      } catch (profileError) {
+        console.error("[REGISTER] Failed to create worker profile:", profileError);
+        // Don't fail registration if profile creation fails
+      }
+    }
+
     res.status(201).json({
       message: "User registered",
       user: {
@@ -160,6 +178,10 @@ router.post("/login", loginIpLimiter, async (req, res) => {
 
     console.log("[LOGIN] Looking up user with email:", email);
     const user = await User.findOne({ email, isDeleted: false }).select("+password +failedLoginAttempts +lockUntil");
+    if (user?.role === "admin") {
+      console.log("[LOGIN] Admin account attempted regular login route");
+      return res.status(403).json({ error: "Use /api/admin/login for admin access" });
+    }
 
     if (user && isAccountLocked(user)) {
       console.log("[LOGIN] User account is locked:", email);

@@ -8,7 +8,10 @@ const { startOutboxProcessor, stopOutboxProcessor } = require("./services/outbox
 const { startDataLifecycleCleanup, stopDataLifecycleCleanup } = require("./services/dataLifecycleCleanup");
 
 const server = http.createServer(app);
-const PORT = Number.parseInt(process.env.PORT, 10) || 5001;
+const BASE_PORT = Number.parseInt(process.env.PORT, 10) || 5001;
+const MAX_PORT_ATTEMPTS = Number.parseInt(process.env.MAX_PORT_ATTEMPTS, 10) || 10;
+let currentPort = BASE_PORT;
+let attemptCount = 0;
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
@@ -20,14 +23,53 @@ mongoose.connect(process.env.MONGO_URI)
 
 initRealtime(server);
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
-function shutdown() {
-  stopOutboxProcessor();
-  stopDataLifecycleCleanup();
+function tryListen(port) {
+  currentPort = port;
+  attemptCount += 1;
+  server.listen(port);
 }
 
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
+server.on("listening", () => {
+  const address = server.address();
+  const activePort = typeof address === "object" && address ? address.port : currentPort;
+  console.log(`Server running on port ${activePort}`);
+});
+
+server.on("error", (error) => {
+  if (error.code === "EADDRINUSE") {
+    if (attemptCount >= MAX_PORT_ATTEMPTS) {
+      console.error(
+        `No free port found after ${MAX_PORT_ATTEMPTS} attempts starting at ${BASE_PORT}.`
+      );
+      console.error("Run one of these commands to inspect/stop the blocking process:");
+      console.error('  netstat -ano | findstr :5000');
+      console.error('  netstat -ano | findstr :5001');
+      console.error('  taskkill /PID <PID> /F');
+      process.exit(1);
+    }
+
+    const nextPort = currentPort + 1;
+    console.warn(`Port ${currentPort} is in use, trying ${nextPort}...`);
+    tryListen(nextPort);
+    return;
+  }
+  throw error;
+});
+
+tryListen(BASE_PORT);
+
+function shutdown(signal) {
+  console.log(`Shutting down server due to ${signal}`);
+  stopOutboxProcessor();
+  stopDataLifecycleCleanup();
+  server.close(() => {
+    process.exit(0);
+  });
+}
+
+process.once("SIGINT", () => shutdown("SIGINT"));
+process.once("SIGTERM", () => shutdown("SIGTERM"));
+process.once("SIGUSR2", () => {
+  shutdown("SIGUSR2");
+  process.kill(process.pid, "SIGUSR2");
+});
