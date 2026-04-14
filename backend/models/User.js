@@ -63,39 +63,43 @@ const userSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-userSchema.pre("save", async function(next) {
-  try {
-    if (typeof this.name === "string") {
-      this.name = this.name.trim().replace(/\s+/g, " ");
-    }
+userSchema.pre("save", async function() {
+  console.log("[User.pre-save] start", {
+    email: this.email,
+    isNew: this.isNew,
+    passwordModified: this.isModified("password")
+  });
 
-    if (typeof this.email === "string") {
-      this.email = this.email.trim().toLowerCase();
-    }
-
-    if (!this.isModified("password")) {
-      return next();
-    }
-
-    if (typeof this.password !== "string" || !this.password) {
-      return next(new Error("Password is required"));
-    }
-
-    const rawPassword = this.password;
-    if (BCRYPT_HASH_PATTERN.test(rawPassword)) {
-      this.password = rawPassword;
-      return next();
-    }
-
-    if (rawPassword.length < 8) {
-      return next(new Error("Password must be at least 8 characters"));
-    }
-
-    this.password = await bcrypt.hash(rawPassword, getSaltRounds());
-    return next();
-  } catch (error) {
-    return next(error);
+  if (typeof this.name === "string") {
+    this.name = this.name.trim().replace(/\s+/g, " ");
   }
+
+  if (typeof this.email === "string") {
+    this.email = this.email.trim().toLowerCase();
+  }
+
+  if (!this.isModified("password")) {
+    console.log("[User.pre-save] password unchanged, skipping hash");
+    return;
+  }
+
+  if (typeof this.password !== "string" || !this.password) {
+    throw new Error("Password is required");
+  }
+
+  const rawPassword = this.password;
+  if (BCRYPT_HASH_PATTERN.test(rawPassword)) {
+    this.password = rawPassword;
+    console.log("[User.pre-save] password looks already hashed, skipping re-hash");
+    return;
+  }
+
+  if (rawPassword.length < 8) {
+    throw new Error("Password must be at least 8 characters");
+  }
+
+  this.password = await bcrypt.hash(rawPassword, getSaltRounds());
+  console.log("[User.pre-save] password hashed for user", { email: this.email });
 });
 
 userSchema.methods.comparePassword = function comparePassword(plainPassword) {
@@ -119,19 +123,16 @@ async function cleanupRelatedData(userId) {
   ]);
 }
 
-userSchema.pre("findOneAndDelete", async function(next) {
+userSchema.pre("findOneAndDelete", async function() {
   const user = await this.model.findOne(this.getFilter()).select("_id");
 
   if (user) {
     await cleanupRelatedData(user._id);
   }
-
-  next();
 });
 
-userSchema.pre("deleteOne", { document: true, query: false }, async function(next) {
+userSchema.pre("deleteOne", { document: true, query: false }, async function() {
   await cleanupRelatedData(this._id);
-  next();
 });
 
 module.exports = mongoose.model("User", userSchema);

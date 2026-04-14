@@ -208,7 +208,7 @@ router.patch("/:id/approve", auth, role("admin"), async (req, res) => {
         reviewedBy: req.user.userId,
         reviewedAt: new Date()
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!doc) {
@@ -237,7 +237,7 @@ router.patch("/:id/reject", auth, role("admin"), async (req, res) => {
         reviewedBy: req.user.userId,
         reviewedAt: new Date()
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!doc) {

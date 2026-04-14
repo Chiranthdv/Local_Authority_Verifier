@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../lib/api";
+import Button from "../components/Button";
+import Modal from "../components/Modal";
 
 function AdminDashboard() {
   const [tab, setTab] = useState("pending");
@@ -113,8 +115,20 @@ function AdminDashboard() {
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
       <div className="mb-6 flex gap-3">
-        <button onClick={() => setTab("pending")} className={`rounded-full px-5 py-2 ${tab === "pending" ? "bg-cyan-400 text-slate-950" : "border border-white/10 text-slate-300"}`}>Pending Workers</button>
-        <button onClick={() => setTab("users")} className={`rounded-full px-5 py-2 ${tab === "users" ? "bg-cyan-400 text-slate-950" : "border border-white/10 text-slate-300"}`}>All Users</button>
+        <Button
+          onClick={() => setTab("pending")}
+          variant={tab === "pending" ? "primary" : "secondary"}
+          size="small"
+        >
+          Pending Workers
+        </Button>
+        <Button
+          onClick={() => setTab("users")}
+          variant={tab === "users" ? "primary" : "secondary"}
+          size="small"
+        >
+          All Users
+        </Button>
       </div>
 
       {error && <p className="mb-4 rounded-2xl border border-rose-300/30 bg-rose-500/10 px-4 py-3 text-rose-200">{error}</p>}
@@ -138,10 +152,21 @@ function AdminDashboard() {
               </div>
 
               <div className="mt-4 flex flex-wrap gap-3">
-                <button onClick={() => openApplication(worker._id)} className="rounded-full border border-cyan-300/50 px-4 py-2 text-cyan-200">
+                <Button
+                  onClick={() => openApplication(worker._id)}
+                  variant="secondary"
+                  size="small"
+                  disabled={loadingApplication && selectedApplication?._id !== worker._id}
+                >
                   {loadingApplication && selectedApplication?._id !== worker._id ? "Loading..." : "Open Application"}
-                </button>
-                <button onClick={() => handleApproveWorker(worker._id)} className="rounded-full bg-emerald-400 px-4 py-2 text-slate-950">Approve Worker</button>
+                </Button>
+                <Button
+                  onClick={() => handleApproveWorker(worker._id)}
+                  variant="success"
+                  size="small"
+                >
+                  Approve Worker
+                </Button>
               </div>
             </div>
           ))}
@@ -178,30 +203,31 @@ function AdminDashboard() {
         </div>
       )}
 
-      {selectedApplication && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4">
-          <div className="w-full max-w-3xl rounded-3xl border border-white/10 bg-slate-900 p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-2xl font-semibold text-white">Application Review</h3>
-                <p className="mt-1 text-slate-300">{selectedApplication.userId?.name} ({selectedApplication.userId?.email})</p>
-                <p className="mt-1 text-slate-400">Role: {selectedApplication.category} | Area: {selectedApplication.location} | Age: {selectedApplication.age || "NA"}</p>
-              </div>
-              <button onClick={() => setSelectedApplication(null)} className="rounded-full border border-white/20 px-3 py-1 text-slate-200">Close</button>
+      <Modal
+        isOpen={!!selectedApplication}
+        onClose={() => setSelectedApplication(null)}
+        title="Application Review"
+        size="large"
+      >
+        {selectedApplication && (
+          <>
+            <div className="mb-4">
+              <p className="text-slate-300">{selectedApplication.userId?.name} ({selectedApplication.userId?.email})</p>
+              <p className="mt-1 text-slate-400">Role: {selectedApplication.category} | Area: {selectedApplication.location} | Age: {selectedApplication.age || "NA"}</p>
             </div>
 
-            <div className="mt-4 rounded-2xl bg-white/5 p-4 text-slate-300">
+            <div className="mb-6 rounded-2xl bg-white/5 p-4 text-slate-300">
               <p className="text-sm text-slate-400">Bio</p>
               <p className="mt-2">{selectedApplication.bio || "No bio provided."}</p>
             </div>
 
-            <div className="mt-5">
-              <h4 className="text-lg font-semibold text-white">Uploaded Documents</h4>
+            <div className="mb-6">
+              <h4 className="text-lg font-semibold text-white mb-3">Uploaded Documents</h4>
               {selectedApplication.documents?.length === 0 && (
-                <p className="mt-3 text-slate-400">No documents uploaded yet.</p>
+                <p className="text-slate-400">No documents uploaded yet.</p>
               )}
               {selectedApplication.documents?.length > 0 && (
-                <div className="mt-3 space-y-3">
+                <div className="space-y-3">
                   {selectedApplication.documents.map((doc) => (
                     <div key={doc._id} className="rounded-2xl bg-white/5 p-4 text-sm text-slate-300">
                       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -212,10 +238,31 @@ function AdminDashboard() {
                         </div>
                         <div className="flex gap-2">
                           {doc.downloadUrl && (
-                            <a href={doc.downloadUrl} target="_blank" rel="noreferrer" className="rounded-full border border-cyan-300/50 px-3 py-1 text-cyan-200">View</a>
+                            <Button
+                              as="a"
+                              href={doc.downloadUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              variant="secondary"
+                              size="small"
+                            >
+                              View
+                            </Button>
                           )}
-                          <button onClick={() => handleApproveDocument(doc._id)} className="rounded-full bg-emerald-400 px-3 py-1 text-slate-950">Approve</button>
-                          <button onClick={() => handleRejectDocument(doc._id)} className="rounded-full bg-rose-400 px-3 py-1 text-slate-950">Reject</button>
+                          <Button
+                            onClick={() => handleApproveDocument(doc._id)}
+                            variant="success"
+                            size="small"
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            onClick={() => handleRejectDocument(doc._id)}
+                            variant="danger"
+                            size="small"
+                          >
+                            Reject
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -224,22 +271,32 @@ function AdminDashboard() {
               )}
             </div>
 
-            <div className="mt-6 rounded-2xl border border-white/10 p-4">
-              <label className="text-sm text-slate-300">Rejection reason (required to reject worker)</label>
+            <div className="rounded-2xl border border-white/10 p-4">
+              <label className="block text-sm text-slate-300 mb-2">Rejection reason (required to reject worker)</label>
               <textarea
                 value={rejectReason}
                 onChange={(event) => setRejectReason(event.target.value)}
                 placeholder="Enter reason for rejection"
-                className="mt-2 min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950 px-3 py-2"
+                className="mb-3 min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950 px-3 py-2 text-slate-100 placeholder-slate-400 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20"
               />
-              <div className="mt-3 flex flex-wrap gap-3">
-                <button onClick={() => handleApproveWorker(selectedApplication._id)} className="rounded-full bg-emerald-400 px-4 py-2 text-slate-950">Approve Worker</button>
-                <button onClick={() => handleRejectWorker(selectedApplication._id)} className="rounded-full bg-rose-400 px-4 py-2 text-slate-950">Reject Worker</button>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={() => handleApproveWorker(selectedApplication._id)}
+                  variant="success"
+                >
+                  Approve Worker
+                </Button>
+                <Button
+                  onClick={() => handleRejectWorker(selectedApplication._id)}
+                  variant="danger"
+                >
+                  Reject Worker
+                </Button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
     </div>
   );
 }

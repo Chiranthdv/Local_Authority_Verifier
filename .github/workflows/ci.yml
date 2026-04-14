@@ -26,9 +26,13 @@ jobs:
       - name: Install backend dependencies
         run: npm ci
 
+      - name: Run backend tests
+        run: npm test
+
       - name: Check backend syntax
         run: |
           node --check server.js
+          node --check app.js
           node --check routes/authRoutes.js
           node --check routes/workerRoutes.js
           node --check routes/reviewRoutes.js

@@ -567,7 +567,7 @@ router.patch("/:id/reject", auth, role("admin"), async (req, res) => {
         verifiedBy: req.user.userId,
         verifiedAt: new Date()
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!worker) {

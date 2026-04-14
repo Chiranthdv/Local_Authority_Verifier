@@ -65,7 +65,7 @@ async function claimNextOutboxEvent(config) {
       $inc: { attempts: 1 }
     },
     {
-      new: true,
+      returnDocument: "after",
       sort: { nextAttemptAt: 1, createdAt: 1 }
     }
   );

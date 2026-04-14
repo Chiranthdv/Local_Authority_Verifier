@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import Button from "../components/Button";
 
 function Login() {
   const navigate = useNavigate();
@@ -76,9 +77,14 @@ function Login() {
 
         {errors.form && <p className="mt-4 text-sm text-rose-300">{errors.form}</p>}
 
-        <button disabled={loading} className="mt-6 w-full rounded-2xl bg-cyan-400 px-4 py-3 font-semibold text-slate-950 disabled:opacity-60">
+        <Button
+          type="submit"
+          disabled={loading}
+          loading={loading}
+          className="mt-6 w-full"
+        >
           {loading ? "Signing in..." : "Sign In"}
-        </button>
+        </Button>
 
         <p className="mt-4 text-sm text-slate-400">
           Need an account? <button type="button" onClick={() => navigate("/register")} className="text-cyan-300">Register</button>

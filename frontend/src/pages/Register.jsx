@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import Button from "../components/Button";
 
 function Register() {
   const navigate = useNavigate();
@@ -19,10 +20,15 @@ function Register() {
     setErrors({});
     setLoading(true);
 
+    console.log("[REGISTER] Submitting form:", { name: form.name, email: form.email, role: form.role });
+
     try {
-      await api.post("/auth/register", form);
-      const { data } = await api.post("/auth/login", { email: form.email, password: form.password });
-      await login(data.token);
+      const registerRes = await api.post("/auth/register", form);
+      console.log("[REGISTER] Registration successful:", registerRes.data);
+
+      const loginRes = await api.post("/auth/login", { email: form.email, password: form.password });
+      console.log("[REGISTER] Login successful");
+      await login(loginRes.data.token);
 
       if (form.role === "worker") {
         navigate("/worker/onboarding");
@@ -30,13 +36,31 @@ function Register() {
         navigate("/");
       }
     } catch (error) {
-      const message = error.response?.data?.error || "Cannot connect to backend server";
-      setErrors({
-        name: message === "All fields are required" ? "Please fill all fields" : "",
-        email: message === "Email already registered" ? "This email is already registered" : "",
-        password: message === "All fields are required" ? "Please fill all fields" : "",
-        form: message !== "Email already registered" ? message : ""
+      console.error("[REGISTER] Error:", {
+        status: error.response?.status,
+        message: error.response?.data?.error,
+        fullError: error.response?.data
       });
+
+      const backendError = error.response?.data?.error || error.message || "Cannot connect to backend server";
+      
+      // Map specific errors to fields
+      const newErrors = {};
+      if (backendError.includes("All fields are required")) {
+        newErrors.name = "Please fill all fields";
+        newErrors.password = "Please fill all fields";
+      } else if (backendError.includes("Email already registered")) {
+        newErrors.email = "This email is already registered";
+      } else if (backendError.includes("Invalid email format")) {
+        newErrors.email = "Please enter a valid email";
+      } else if (backendError.includes("Password must be at least")) {
+        newErrors.password = backendError;
+      } else {
+        // Show backend error for all other cases
+        newErrors.form = backendError;
+      }
+
+      setErrors(newErrors);
     } finally {
       setLoading(false);
     }
@@ -76,9 +100,15 @@ function Register() {
 
         {errors.form && <p className="mt-4 text-sm text-rose-300">{errors.form}</p>}
 
-        <button disabled={loading} className="mt-6 w-full rounded-2xl bg-emerald-400 px-4 py-3 font-semibold text-slate-950 disabled:opacity-60">
+        <Button
+          type="submit"
+          disabled={loading}
+          loading={loading}
+          variant="success"
+          className="mt-6 w-full"
+        >
           {loading ? "Creating account..." : "Register"}
-        </button>
+        </Button>
       </form>
     </div>
   );

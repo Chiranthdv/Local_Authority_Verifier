@@ -13,6 +13,36 @@ function getInitials(name) {
     .join("");
 }
 
+function getVerificationBadge(verificationStatus) {
+  if (!verificationStatus) return null;
+
+  switch (verificationStatus) {
+    case "approved":
+      return (
+        <span
+          className="rounded-full bg-green-500/15 px-3 py-1 text-green-300"
+          title="This worker has been verified by admin"
+        >
+          ✅ Verified
+        </span>
+      );
+    case "pending":
+      return (
+        <span className="rounded-full bg-yellow-500/15 px-3 py-1 text-yellow-300">
+          ⏳ Pending Verification
+        </span>
+      );
+    case "rejected":
+      return (
+        <span className="rounded-full bg-red-500/15 px-3 py-1 text-red-300">
+          ❌ Not Verified
+        </span>
+      );
+    default:
+      return null;
+  }
+}
+
 function WorkerProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -126,7 +156,7 @@ function WorkerProfile() {
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-4xl font-semibold text-white">{worker.name}</h1>
-            <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-emerald-300">Verified</span>
+            {privateWorker && getVerificationBadge(privateWorker.verificationStatus)}
           </div>
           <p className="mt-3 text-slate-300">{worker.category} | {worker.area} | Rs {worker.hourlyRate || 0}/hr</p>
           <p className="mt-2 text-slate-300">Experience: {worker.experience || 0} years</p>

@@ -339,7 +339,7 @@ async function acceptRequest(req, res) {
         status: { $in: ["pending", "requested"] }
       },
       updateData,
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!job) {
@@ -432,7 +432,7 @@ async function rejectRequest(req, res) {
         status: { $in: ["pending", "requested"] }
       },
       { status: "rejected", rejectionReason: reason },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!job) {
@@ -473,7 +473,7 @@ async function completeRequest(req, res) {
     const job = await Job.findOneAndUpdate(
       filter,
       { status: "completed", completedAt: new Date() },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!job) {
@@ -514,7 +514,7 @@ async function cancelRequest(req, res) {
         status: { $in: ["pending", "requested"] }
       },
       { status: "cancelled", rejectionReason: "Cancelled by customer" },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!job) {
