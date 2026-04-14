@@ -10,10 +10,13 @@ const { startDataLifecycleCleanup, stopDataLifecycleCleanup } = require("./servi
 const server = http.createServer(app);
 const BASE_PORT = Number.parseInt(process.env.PORT, 10) || 5001;
 const MAX_PORT_ATTEMPTS = Number.parseInt(process.env.MAX_PORT_ATTEMPTS, 10) || 10;
+const HOST = process.env.HOST || "0.0.0.0";
 let currentPort = BASE_PORT;
 let attemptCount = 0;
 
-mongoose.connect(process.env.MONGO_URI)
+const mongoUri = process.env.MONGO_URI || "mongodb://mongo:27017/app";
+
+mongoose.connect(mongoUri)
   .then(() => {
     console.log("MongoDB Connected");
     startOutboxProcessor();
@@ -26,13 +29,14 @@ initRealtime(server);
 function tryListen(port) {
   currentPort = port;
   attemptCount += 1;
-  server.listen(port);
+  server.listen(port, HOST);
 }
 
 server.on("listening", () => {
   const address = server.address();
   const activePort = typeof address === "object" && address ? address.port : currentPort;
-  console.log(`Server running on port ${activePort}`);
+  const activeHost = typeof address === "object" && address ? address.address : HOST;
+  console.log(`Server running on ${activeHost}:${activePort}`);
 });
 
 server.on("error", (error) => {
