@@ -15,16 +15,7 @@ let currentPort = BASE_PORT;
 let attemptCount = 0;
 
 const mongoUri = process.env.MONGO_URI || "mongodb://mongo:27017/app";
-
-mongoose.connect(mongoUri)
-  .then(() => {
-    console.log("MongoDB Connected");
-    startOutboxProcessor();
-    startDataLifecycleCleanup();
-  })
-  .catch((err) => console.log(err));
-
-initRealtime(server);
+mongoose.set("bufferCommands", false);
 
 function tryListen(port) {
   currentPort = port;
@@ -60,14 +51,36 @@ server.on("error", (error) => {
   throw error;
 });
 
-tryListen(BASE_PORT);
+async function bootstrap() {
+  try {
+    await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 10000 });
+    console.log("MongoDB Connected");
+
+    startOutboxProcessor();
+    startDataLifecycleCleanup();
+    initRealtime(server);
+    tryListen(BASE_PORT);
+  } catch (err) {
+    console.error("MongoDB connection failed. Server not started.");
+    console.error(err?.message || err);
+    process.exit(1);
+  }
+}
+
+bootstrap();
 
 function shutdown(signal) {
   console.log(`Shutting down server due to ${signal}`);
   stopOutboxProcessor();
   stopDataLifecycleCleanup();
-  server.close(() => {
-    process.exit(0);
+  server.close(async () => {
+    try {
+      await mongoose.connection.close();
+    } catch (err) {
+      console.error("Error while closing MongoDB connection", err?.message || err);
+    } finally {
+      process.exit(0);
+    }
   });
 }
 

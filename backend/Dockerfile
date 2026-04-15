@@ -1,9 +1,13 @@
-FROM node:18-alpine
+ARG TARGETPLATFORM=linux/amd64
+FROM --platform=$TARGETPLATFORM node:20-alpine
+# Fallback if alpine still throws exec format errors:
+# FROM --platform=$TARGETPLATFORM node:20
 
 WORKDIR /app
+ENV NODE_ENV=development
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci --no-audit --no-fund
 
 COPY . .
 

@@ -22,7 +22,26 @@ function Login() {
     setLoading(true);
 
     try {
-      const { data } = await api.post("/auth/login", form);
+      let data;
+
+      try {
+        const response = await api.post("/auth/login", form);
+        data = response.data;
+      } catch (authError) {
+        const authMessage =
+          authError.response?.data?.error ||
+          authError.response?.data?.message ||
+          "";
+
+        // Backend may enforce a dedicated admin login endpoint.
+        if (authMessage === "Use /api/admin/login for admin access") {
+          const adminResponse = await api.post("/admin/login", form);
+          data = adminResponse.data;
+        } else {
+          throw authError;
+        }
+      }
+
       await login(data.token);
 
       const redirectTarget = location.state?.from;
@@ -36,7 +55,10 @@ function Login() {
         navigate("/");
       }
     } catch (error) {
-      const message = error.response?.data?.error || "Cannot connect to backend server";
+      const message =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Cannot connect to backend server";
       setErrors({
         email: message === "Invalid credentials" || message === "Email and password are required" ? message : "",
         password: message === "Invalid credentials" || message === "Email and password are required" ? message : "",

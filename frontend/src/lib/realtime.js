@@ -7,7 +7,7 @@ function getBackendUrl() {
   if (typeof envBase === "string" && envBase.trim()) {
     return envBase.replace(/\/api\/?$/, "");
   }
-  return "http://localhost:5001";
+  return "http://localhost:5000";
 }
 
 export function connectRealtime(token) {

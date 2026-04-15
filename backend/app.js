@@ -17,8 +17,18 @@ const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 const trustProxy = Number.parseInt(process.env.TRUST_PROXY_HOPS || "0", 10);
+const authRateLimitMax = Number.parseInt(
+  process.env.AUTH_RATE_LIMIT_MAX || (process.env.NODE_ENV === "production" ? "20" : "100"),
+  10
+);
 
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 });
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number.isFinite(authRateLimitMax) ? authRateLimitMax : 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many login attempts. Please try again later." }
+});
 
 if (Number.isInteger(trustProxy) && trustProxy > 0) {
   app.set("trust proxy", trustProxy);
