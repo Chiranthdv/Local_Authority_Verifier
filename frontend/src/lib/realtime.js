@@ -7,15 +7,11 @@ function getBackendUrl() {
   if (typeof envBase === "string" && envBase.trim()) {
     return envBase.replace(/\/api\/?$/, "");
   }
-  return "http://localhost:5000";
+  return "http://localhost:5001";
 }
 
-export function connectRealtime(token) {
-  if (!token) {
-    return null;
-  }
-
-  if (socketInstance && socketInstance.connected && socketInstance.authToken === token) {
+export function connectRealtime() {
+  if (socketInstance && socketInstance.connected) {
     return socketInstance;
   }
 
@@ -24,11 +20,9 @@ export function connectRealtime(token) {
   }
 
   socketInstance = io(getBackendUrl(), {
-    auth: { token },
     transports: ["websocket", "polling"],
     withCredentials: true
   });
-  socketInstance.authToken = token;
   return socketInstance;
 }
 

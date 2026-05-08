@@ -1,39 +1,50 @@
+import React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
-import api from "../lib/api";
+import api, { clearSessionExpiryDispatch } from "../lib/api";
 import { connectRealtime, disconnectRealtime } from "../lib/realtime";
 import { toast } from "react-toastify";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const [sessionActive, setSessionActive] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState("");
 
-  const clearSession = () => {
-    localStorage.removeItem("token");
-    setToken(null);
+  const clearSession = (options = {}) => {
+    const { redirectToLogin = false, sessionExpired = false, message = "" } = options;
+
+    setSessionActive(false);
     setUser(null);
+    disconnectRealtime();
+
+    if (sessionExpired && message) {
+      setSessionExpiredMessage(message);
+      try {
+        window.sessionStorage.setItem("auth_notice", message);
+      } catch {
+        // Ignore storage errors in constrained environments.
+      }
+    }
+
+    if (redirectToLogin && window.location.pathname !== "/login") {
+      const nextLocation = sessionExpired ? "/login?reason=session-expired" : "/login";
+      window.location.assign(nextLocation);
+    }
   };
 
   const refreshUser = async () => {
-    const storedToken = localStorage.getItem("token");
-
-    if (!storedToken) {
-      setUser(null);
-      setLoading(false);
-      return null;
-    }
-
     try {
+      clearSessionExpiryDispatch();
       const { data } = await api.get("/auth/me");
       setUser(data);
+      setSessionActive(true);
+      setSessionExpiredMessage("");
       return data;
-    } catch (error) {
-      clearSession();
-      if (window.location.pathname !== "/login") {
-        window.location.replace("/login");
-      }
+    } catch {
+      setUser(null);
+      setSessionActive(false);
       return null;
     } finally {
       setLoading(false);
@@ -42,15 +53,33 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     refreshUser();
-  }, [token]);
+  }, []);
 
   useEffect(() => {
-    if (!token) {
+    const handleSessionExpired = (event) => {
+      const message = event.detail?.message || "Session expired. Please sign in again.";
+      toast.info(message, { autoClose: 2500 });
+      clearSession({
+        redirectToLogin: true,
+        sessionExpired: true,
+        message
+      });
+      setLoading(false);
+    };
+
+    window.addEventListener("app:auth:session-expired", handleSessionExpired);
+    return () => {
+      window.removeEventListener("app:auth:session-expired", handleSessionExpired);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!sessionActive) {
       disconnectRealtime();
       return;
     }
 
-    const socket = connectRealtime(token);
+    const socket = connectRealtime();
     if (!socket) {
       return;
     }
@@ -88,29 +117,42 @@ export function AuthProvider({ children }) {
       socket.off("chat:message", handleChatMessage);
       socket.off("chat:read", handleChatRead);
     };
-  }, [token]);
+  }, [sessionActive]);
 
-  const login = async (nextToken) => {
-    localStorage.setItem("token", nextToken);
-    setToken(nextToken);
+  const login = async () => {
+    clearSessionExpiryDispatch();
+    setSessionActive(true);
     setLoading(true);
+    setSessionExpiredMessage("");
     return refreshUser();
   };
 
   const logout = async () => {
     try {
       await api.post("/auth/logout");
-    } catch (error) {
+    } catch {
       // Best-effort logout only.
     }
 
     clearSession();
-    disconnectRealtime();
     setLoading(false);
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, loading, login, logout, refreshUser, setUser, clearSession }}>
+    <AuthContext.Provider
+      value={{
+        token: null,
+        user,
+        loading,
+        login,
+        logout,
+        refreshUser,
+        setUser,
+        clearSession,
+        sessionActive,
+        sessionExpiredMessage
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

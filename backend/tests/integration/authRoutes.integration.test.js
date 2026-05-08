@@ -54,7 +54,7 @@ describe("Auth integration", () => {
     expect(response.body.error).toBe("Invalid email format");
   });
 
-  test("logs in a registered user and returns a JWT token", async () => {
+  test("logs in a registered user and sets session cookies", async () => {
     await request(app).post("/api/auth/register").send({
       name: "Login User",
       email: "login@example.com",
@@ -67,7 +67,10 @@ describe("Auth integration", () => {
       .send({ email: "login@example.com", password: "Password123" });
 
     expect(loginResponse.status).toBe(200);
-    expect(loginResponse.body).toHaveProperty("token");
     expect(loginResponse.body.role).toBe("worker");
+    expect(Array.isArray(loginResponse.headers["set-cookie"])).toBe(true);
+    const cookieHeader = loginResponse.headers["set-cookie"].join(";");
+    expect(cookieHeader).toContain("accessToken=");
+    expect(cookieHeader).toContain("refreshToken=");
   });
 });

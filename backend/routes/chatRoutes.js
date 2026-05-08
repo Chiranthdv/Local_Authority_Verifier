@@ -44,11 +44,10 @@ const CHAT_ALLOWED_BOOKING_STATUSES = configuredBookingStatuses.length
   : DEFAULT_CHAT_BOOKING_STATUSES;
 const chatMessageCooldown = createActionCooldownMiddleware({
   cooldownMs: CHAT_MESSAGE_COOLDOWN_MS,
-  keyGenerator: (req) => {
-    const userId = req.user?.userId;
+  actionTypeGenerator: (req) => {
     const conversationId = req.params?.conversationId;
-    if (!userId || !conversationId) return "";
-    return `chat:${userId}:${conversationId}`;
+    if (!conversationId) return "";
+    return `chat:${conversationId}`;
   },
   message: "Please wait before sending another message in this conversation."
 });
@@ -275,43 +274,72 @@ async function loadConversationForAuthorizedParticipant(req, res, next) {
   }
 }
 
-router.post("/start", auth, role("customer"), async (req, res) => {
+router.post("/start", auth, role("customer", "worker"), async (req, res) => {
   try {
-    const { workerId } = req.body;
+    const requestedWorkerId = req.body?.workerId;
+    const requestedCustomerId = req.body?.customerId;
+
+    let customerId = "";
+    let workerId = "";
+
+    if (req.user.role === "customer") {
+      workerId = requestedWorkerId;
+      customerId = req.user.userId;
+    } else {
+      customerId = requestedCustomerId;
+      workerId = req.user.userId;
+    }
+
     if (!isValidObjectId(workerId)) {
       return res.status(400).json({ error: "Invalid worker id" });
     }
-    if (String(workerId) === req.user.userId) {
+
+    if (!isValidObjectId(customerId)) {
+      return res.status(400).json({ error: "Invalid customer id" });
+    }
+
+    if (String(workerId) === String(customerId)) {
       return res.status(400).json({ error: "You cannot start a chat with yourself" });
     }
 
-    const workerProfile = await WorkerProfile.findOne({
-      userId: workerId,
-      verificationStatus: "approved",
-      isDeleted: false
-    }).populate({
-      path: "userId",
-      select: "_id role",
-      match: { role: "worker", isDeleted: false }
-    });
+    const [workerProfile, customerUser] = await Promise.all([
+      WorkerProfile.findOne({
+        userId: workerId,
+        verificationStatus: "approved",
+        isDeleted: false
+      }).populate({
+        path: "userId",
+        select: "_id role",
+        match: { role: "worker", isDeleted: false }
+      }),
+      User.findOne({
+        _id: customerId,
+        role: "customer",
+        isDeleted: false
+      }).select("_id role")
+    ]);
 
     if (!workerProfile || !workerProfile.userId) {
       return res.status(404).json({ error: "Worker is not available for chat" });
     }
 
-    const validBooking = await findLatestValidBooking(req.user.userId, workerId);
+    if (!customerUser) {
+      return res.status(404).json({ error: "Customer is not available for chat" });
+    }
+
+    const validBooking = await findLatestValidBooking(customerId, workerId);
     if (!validBooking) {
       return res.status(403).json({ error: "Valid booking is required before starting chat" });
     }
 
     let created = false;
     let conversation = await Conversation.findOne({
-      customerId: req.user.userId,
+      customerId,
       workerId
     });
     if (!conversation) {
       conversation = await Conversation.create({
-        customerId: req.user.userId,
+        customerId,
         workerId,
         jobId: validBooking._id,
         lastMessage: "",
@@ -337,13 +365,15 @@ router.post("/start", auth, role("customer"), async (req, res) => {
     return res.status(created ? 201 : 200).json(toPublicConversation(conversation, req.user.userId));
   } catch (err) {
     if (err?.code === 11000) {
-      const validBooking = await findLatestValidBooking(req.user.userId, req.body.workerId);
+      const fallbackCustomerId = req.user.role === "customer" ? req.user.userId : req.body.customerId;
+      const fallbackWorkerId = req.user.role === "customer" ? req.body.workerId : req.user.userId;
+      const validBooking = await findLatestValidBooking(fallbackCustomerId, fallbackWorkerId);
       if (!validBooking) {
         return res.status(403).json({ error: "Valid booking is required before starting chat" });
       }
       const conversation = await Conversation.findOne({
-        customerId: req.user.userId,
-        workerId: req.body.workerId
+        customerId: fallbackCustomerId,
+        workerId: fallbackWorkerId
       })
         .populate({ path: "customerId", select: "name role", match: { isDeleted: false } })
         .populate({ path: "workerId", select: "name role", match: { isDeleted: false } });

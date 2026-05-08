@@ -3,6 +3,27 @@ const jwt = require("jsonwebtoken");
 
 let ioInstance = null;
 const socketsByUser = new Map();
+const ACCESS_TOKEN_COOKIE = "accessToken";
+
+function parseCookies(cookieHeader) {
+  if (typeof cookieHeader !== "string" || !cookieHeader.trim()) {
+    return {};
+  }
+
+  return cookieHeader.split(";").reduce((acc, pair) => {
+    const separatorIndex = pair.indexOf("=");
+    if (separatorIndex === -1) {
+      return acc;
+    }
+
+    const key = pair.slice(0, separatorIndex).trim();
+    const value = pair.slice(separatorIndex + 1).trim();
+    if (key) {
+      acc[key] = decodeURIComponent(value);
+    }
+    return acc;
+  }, {});
+}
 
 function extractToken(socket) {
   const authToken = socket.handshake?.auth?.token;
@@ -13,6 +34,11 @@ function extractToken(socket) {
   const authHeader = socket.handshake?.headers?.authorization;
   if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
     return authHeader.split(" ")[1];
+  }
+
+  const cookies = parseCookies(socket.handshake?.headers?.cookie);
+  if (typeof cookies[ACCESS_TOKEN_COOKIE] === "string" && cookies[ACCESS_TOKEN_COOKIE].trim()) {
+    return cookies[ACCESS_TOKEN_COOKIE].trim();
   }
 
   return "";

@@ -18,6 +18,10 @@ const documentSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  fileKey: {
+    type: String,
+    default: ""
+  },
   originalName: String,
   mimeType: String,
   fileSize: Number,
@@ -28,6 +32,10 @@ const documentSchema = new mongoose.Schema({
     default: "pending"
   },
   reviewNote: {
+    type: String,
+    default: ""
+  },
+  rejectionReason: {
     type: String,
     default: ""
   },

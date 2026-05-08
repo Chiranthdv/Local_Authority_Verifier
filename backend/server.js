@@ -1,14 +1,17 @@
 const http = require("http");
 const mongoose = require("mongoose");
 const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 require("dotenv").config({ path: path.join(__dirname, ".env") });
 const { app } = require("./app");
 const { initRealtime } = require("./services/realtime");
 const { startOutboxProcessor, stopOutboxProcessor } = require("./services/outboxProcessor");
 const { startDataLifecycleCleanup, stopDataLifecycleCleanup } = require("./services/dataLifecycleCleanup");
+const { startTempFileCleanup, stopTempFileCleanup } = require("./services/tempFileCleanup");
+const { closeRedisConnection } = require("./config/redis");
 
 const server = http.createServer(app);
-const BASE_PORT = Number.parseInt(process.env.PORT, 10) || 5001;
+const BASE_PORT = Number.parseInt(process.env.API_PORT || process.env.PORT, 10) || 5001;
 const MAX_PORT_ATTEMPTS = Number.parseInt(process.env.MAX_PORT_ATTEMPTS, 10) || 10;
 const HOST = process.env.HOST || "0.0.0.0";
 let currentPort = BASE_PORT;
@@ -58,6 +61,7 @@ async function bootstrap() {
 
     startOutboxProcessor();
     startDataLifecycleCleanup();
+    startTempFileCleanup();
     initRealtime(server);
     tryListen(BASE_PORT);
   } catch (err) {
@@ -73,8 +77,10 @@ function shutdown(signal) {
   console.log(`Shutting down server due to ${signal}`);
   stopOutboxProcessor();
   stopDataLifecycleCleanup();
+  stopTempFileCleanup();
   server.close(async () => {
     try {
+      await closeRedisConnection();
       await mongoose.connection.close();
     } catch (err) {
       console.error("Error while closing MongoDB connection", err?.message || err);

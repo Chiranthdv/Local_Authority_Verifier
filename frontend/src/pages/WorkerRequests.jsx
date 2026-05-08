@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
 
 const STATUS_OPTIONS = ["all", "pending", "accepted", "rejected", "completed", "cancelled"];
 
 function WorkerRequests() {
+  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [status, setStatus] = useState("pending");
   const [loading, setLoading] = useState(true);
@@ -130,12 +132,20 @@ function WorkerRequests() {
               )}
 
               {item.status === "accepted" && (
-                <button
-                  onClick={() => completeRequest(item._id)}
-                  className="mt-3 rounded-full bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950"
-                >
-                  Mark Completed
-                </button>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <button
+                    onClick={() => completeRequest(item._id)}
+                    className="rounded-full bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950"
+                  >
+                    Mark Completed
+                  </button>
+                  <button
+                    onClick={() => navigate(`/chats?customerId=${item.customerId?._id || ""}`)}
+                    className="rounded-full border border-cyan-300/40 px-4 py-2 text-sm text-cyan-200"
+                  >
+                    Open Chat
+                  </button>
+                </div>
               )}
             </article>
           ))}

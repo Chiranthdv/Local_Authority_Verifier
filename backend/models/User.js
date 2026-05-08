@@ -64,12 +64,6 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 userSchema.pre("save", async function() {
-  console.log("[User.pre-save] start", {
-    email: this.email,
-    isNew: this.isNew,
-    passwordModified: this.isModified("password")
-  });
-
   if (typeof this.name === "string") {
     this.name = this.name.trim().replace(/\s+/g, " ");
   }
@@ -79,7 +73,6 @@ userSchema.pre("save", async function() {
   }
 
   if (!this.isModified("password")) {
-    console.log("[User.pre-save] password unchanged, skipping hash");
     return;
   }
 
@@ -90,7 +83,6 @@ userSchema.pre("save", async function() {
   const rawPassword = this.password;
   if (BCRYPT_HASH_PATTERN.test(rawPassword)) {
     this.password = rawPassword;
-    console.log("[User.pre-save] password looks already hashed, skipping re-hash");
     return;
   }
 
@@ -99,7 +91,6 @@ userSchema.pre("save", async function() {
   }
 
   this.password = await bcrypt.hash(rawPassword, getSaltRounds());
-  console.log("[User.pre-save] password hashed for user", { email: this.email });
 });
 
 userSchema.methods.comparePassword = function comparePassword(plainPassword) {

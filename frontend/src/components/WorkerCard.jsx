@@ -10,12 +10,25 @@ function getInitials(name) {
     .join("");
 }
 
+function sanitizeText(value, fallback) {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+
+  const cleaned = value
+    .replace(/[<>]/g, "")
+    .trim();
+
+  return cleaned || fallback;
+}
+
 function WorkerCard({ worker }) {
   const navigate = useNavigate();
-  const name = worker?.name || "Worker";
+  const name = sanitizeText(worker?.name, "Worker");
   const rating = worker?.rating;
   const experience = worker?.experience || 0;
-  const area = worker?.area || "Location pending";
+  const area = sanitizeText(worker?.area, "Location pending");
+  const category = sanitizeText(worker?.category, "General");
   const workerRef = worker?.workerRef || "";
   const canOpenProfile = Boolean(workerRef);
 
@@ -39,14 +52,14 @@ function WorkerCard({ worker }) {
             <span className="truncate">{name}</span>
           </div>
           <p className="text-sm capitalize text-slate-400">
-            {worker?.category || "General"} • {area}
+            {category} | {area}
           </p>
         </div>
       </div>
 
       <div className="mb-3 flex items-center justify-between text-sm">
         <span className="text-amber-300">
-          {rating ? `★ ${rating}` : "No reviews yet"}
+          {rating ? `Rating ${rating}` : "No reviews yet"}
         </span>
         <span className="rounded-full bg-cyan-500/15 px-3 py-1 text-cyan-300">
           {experience} yrs exp

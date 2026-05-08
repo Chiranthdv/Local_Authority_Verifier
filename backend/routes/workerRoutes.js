@@ -10,6 +10,7 @@ const auth = require("../middleware/auth");
 const role = require("../middleware/role");
 const upload = require("../config/multer");
 const { buildSignedDocumentUrl } = require("../utils/documentAccess");
+const { storageService } = require("../services/storageService");
 
 function getBadgeLevel(score) {
   if (score <= 30) return "Rising";
@@ -618,7 +619,14 @@ router.post("/:id/photo", auth, role("worker"), upload.single("file"), async (re
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    worker.photoUrl = req.file.path;
+    const storedPhoto = await storageService.uploadFile(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      "worker-photos"
+    );
+
+    worker.photoUrl = storedPhoto.url;
     await worker.save();
 
     res.json({ message: "Photo uploaded", photoUrl: worker.photoUrl });

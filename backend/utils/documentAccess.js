@@ -1,4 +1,6 @@
 const jwt = require("jsonwebtoken");
+const path = require("path");
+const { storageService } = require("../services/storageService");
 
 const DEFAULT_EXPIRY = "15m";
 
@@ -42,8 +44,21 @@ function buildSignedDocumentUrl(req, documentId, options = {}) {
   return `${baseUrl}/api/documents/file/${documentId}?token=${encodeURIComponent(token)}`;
 }
 
+function getDocumentFilePath(documentRecord) {
+  if (documentRecord?.fileKey) {
+    return storageService.getFilePath(documentRecord.fileKey);
+  }
+
+  if (documentRecord?.fileUrl && path.isAbsolute(documentRecord.fileUrl)) {
+    return path.resolve(documentRecord.fileUrl);
+  }
+
+  return "";
+}
+
 module.exports = {
   signDocumentAccessToken,
   verifyDocumentAccessToken,
-  buildSignedDocumentUrl
+  buildSignedDocumentUrl,
+  getDocumentFilePath
 };

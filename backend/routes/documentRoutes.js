@@ -1,17 +1,20 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const fs = require("fs");
-const path = require("path");
 const router = express.Router();
 const upload = require("../config/multer");
 const Document = require("../models/Document");
 const WorkerProfile = require("../models/WorkerProfile");
 const auth = require("../middleware/auth");
 const role = require("../middleware/role");
-const { buildSignedDocumentUrl, verifyDocumentAccessToken } = require("../utils/documentAccess");
+const { storageService } = require("../services/storageService");
+const {
+  buildSignedDocumentUrl,
+  verifyDocumentAccessToken,
+  getDocumentFilePath
+} = require("../utils/documentAccess");
 
 const ALLOWED_DOCUMENT_TYPES = new Set(["certificate"]);
-const UPLOADS_ROOT = path.resolve(path.join(__dirname, "..", "uploads"));
 
 function isValidObjectId(id) {
   return mongoose.Types.ObjectId.isValid(id);
@@ -28,6 +31,7 @@ function toDocumentResponse(req, doc, scope, actorUserId) {
     fileSize: plain.fileSize,
     status: plain.status,
     reviewNote: plain.reviewNote,
+    rejectionReason: plain.rejectionReason,
     reviewedBy: plain.reviewedBy,
     reviewedAt: plain.reviewedAt,
     createdAt: plain.createdAt,
@@ -40,19 +44,6 @@ function toDocumentResponse(req, doc, scope, actorUserId) {
   };
 }
 
-function resolveDocumentPath(fileUrl) {
-  if (!fileUrl || typeof fileUrl !== "string") {
-    return "";
-  }
-
-  const absolutePath = path.resolve(fileUrl);
-  if (!absolutePath.startsWith(UPLOADS_ROOT)) {
-    return "";
-  }
-
-  return absolutePath;
-}
-
 router.post("/upload", auth, role("worker"), upload.single("file"), async (req, res) => {
   try {
     console.log("[DOCUMENT UPLOAD] Request received");
@@ -61,7 +52,7 @@ router.post("/upload", auth, role("worker"), upload.single("file"), async (req, 
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size,
-      path: req.file.path
+      hasBuffer: Buffer.isBuffer(req.file.buffer)
     } : "No file received");
     console.log("[DOCUMENT UPLOAD] Body:", req.body);
 
@@ -93,15 +84,24 @@ router.post("/upload", auth, role("worker"), upload.single("file"), async (req, 
       console.log("[DOCUMENT UPLOAD] Revived soft-deleted worker profile:", String(workerProfile._id));
     }
 
+    const storedFile = await storageService.uploadFile(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      "documents"
+    );
+
     const doc = await Document.create({
       userId: req.user.userId,
       documentType,
-      fileUrl: req.file.path,
+      fileUrl: storedFile.url,
+      fileKey: storedFile.key,
       originalName: req.file.originalname,
       mimeType: req.file.mimetype,
       fileSize: req.file.size,
       status: "pending",
-      reviewNote: ""
+      reviewNote: "",
+      rejectionReason: ""
     });
 
     if (workerProfile.verificationStatus !== "pending") {
@@ -200,7 +200,7 @@ router.get("/file/:id", async (req, res) => {
       return res.status(403).json({ error: "Invalid or expired document token" });
     }
 
-    const doc = await Document.findById(req.params.id).select("_id userId documentType status mimeType fileUrl originalName");
+    const doc = await Document.findById(req.params.id).select("_id userId documentType status mimeType fileUrl fileKey originalName");
     if (!doc) {
       return res.status(404).json({ error: "Document not found" });
     }
@@ -226,7 +226,7 @@ router.get("/file/:id", async (req, res) => {
       return res.status(403).json({ error: "Invalid access scope" });
     }
 
-    const absolutePath = resolveDocumentPath(doc.fileUrl);
+    const absolutePath = getDocumentFilePath(doc);
     if (!absolutePath || !fs.existsSync(absolutePath)) {
       return res.status(404).json({ error: "Document file not found" });
     }
@@ -252,6 +252,7 @@ router.patch("/:id/approve", auth, role("admin"), async (req, res) => {
       {
         status: "approved",
         reviewNote: "",
+        rejectionReason: "",
         reviewedBy: req.user.userId,
         reviewedAt: new Date()
       },
@@ -275,12 +276,16 @@ router.patch("/:id/reject", auth, role("admin"), async (req, res) => {
     }
 
     const reviewNote = typeof req.body.reason === "string" ? req.body.reason.trim() : "";
+    if (!reviewNote) {
+      return res.status(400).json({ error: "Rejection reason is required" });
+    }
 
     const doc = await Document.findByIdAndUpdate(
       req.params.id,
       {
         status: "rejected",
         reviewNote,
+        rejectionReason: reviewNote,
         reviewedBy: req.user.userId,
         reviewedAt: new Date()
       },
@@ -314,9 +319,13 @@ router.delete("/:id", auth, async (req, res) => {
     }
 
     // Delete the physical file
-    const absolutePath = resolveDocumentPath(doc.fileUrl);
-    if (absolutePath && fs.existsSync(absolutePath)) {
-      fs.unlinkSync(absolutePath);
+    if (doc.fileKey) {
+      await storageService.deleteFile(doc.fileKey);
+    } else {
+      const absolutePath = getDocumentFilePath(doc);
+      if (absolutePath && fs.existsSync(absolutePath)) {
+        await fs.promises.unlink(absolutePath);
+      }
     }
 
     // Delete from database

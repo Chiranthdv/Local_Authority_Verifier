@@ -54,14 +54,15 @@ describe("Booking flow integration", () => {
       .send({ email: "customer1@example.com", password: "Password123" });
 
     expect(customerLogin.status).toBe(200);
-    const customerToken = customerLogin.body.token;
+    const customerCookie = customerLogin.headers["set-cookie"]?.[0];
+    expect(customerCookie).toBeTruthy();
 
     const bookingDate = new Date();
     bookingDate.setUTCDate(bookingDate.getUTCDate() + 2);
 
     const bookingResponse = await request(app)
       .post("/api/jobs/create")
-      .set("Authorization", `Bearer ${customerToken}`)
+      .set("Cookie", customerCookie)
       .send({
         workerId: worker._id.toString(),
         serviceDate: bookingDate.toISOString(),
@@ -79,11 +80,12 @@ describe("Booking flow integration", () => {
       .send({ email: "worker1@example.com", password: "Password123" });
 
     expect(workerLogin.status).toBe(200);
-    const workerToken = workerLogin.body.token;
+    const workerCookie = workerLogin.headers["set-cookie"]?.[0];
+    expect(workerCookie).toBeTruthy();
 
     const acceptResponse = await request(app)
       .patch(`/api/jobs/${bookingResponse.body._id}/accept`)
-      .set("Authorization", `Bearer ${workerToken}`)
+      .set("Cookie", workerCookie)
       .send();
 
     expect(acceptResponse.status).toBe(200);

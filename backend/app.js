@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-const rateLimit = require("express-rate-limit");
 const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, ".env") });
 
@@ -14,6 +13,7 @@ const userRoutes = require("./routes/userRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const { buildLimiter } = require("./middleware/rateLimiters");
 
 const app = express();
 const trustProxy = Number.parseInt(process.env.TRUST_PROXY_HOPS || "0", 10);
@@ -22,12 +22,11 @@ const authRateLimitMax = Number.parseInt(
   10
 );
 
-const authLimiter = rateLimit({
+const authLimiter = buildLimiter({
   windowMs: 15 * 60 * 1000,
   max: Number.isFinite(authRateLimitMax) ? authRateLimitMax : 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many login attempts. Please try again later." }
+  message: "Too many login attempts. Please try again later.",
+  prefix: "rl:auth:global:"
 });
 
 if (Number.isInteger(trustProxy) && trustProxy > 0) {

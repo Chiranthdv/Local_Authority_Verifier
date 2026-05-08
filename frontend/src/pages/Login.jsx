@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
@@ -11,6 +12,19 @@ function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const reason = new URLSearchParams(location.search).get("reason");
+    if (reason !== "session-expired") {
+      return;
+    }
+
+    const notice = window.sessionStorage.getItem("auth_notice");
+    if (notice) {
+      toast.info(notice, { autoClose: 2500 });
+      window.sessionStorage.removeItem("auth_notice");
+    }
+  }, [location.search]);
 
   if (user) {
     return <Navigate to="/" replace />;
@@ -33,7 +47,6 @@ function Login() {
           authError.response?.data?.message ||
           "";
 
-        // Backend may enforce a dedicated admin login endpoint.
         if (authMessage === "Use /api/admin/login for admin access") {
           const adminResponse = await api.post("/admin/login", form);
           data = adminResponse.data;
@@ -42,7 +55,7 @@ function Login() {
         }
       }
 
-      await login(data.token);
+      await login();
 
       const redirectTarget = location.state?.from;
       if (redirectTarget) {

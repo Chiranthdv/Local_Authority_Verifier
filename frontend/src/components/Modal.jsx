@@ -1,140 +1,121 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { backdropVariants, modalVariants } from "../lib/motion";
 
-// Modal Component with improved UX
-// Features: Close button, escape key, smooth animations, focus management
+const sizeStyles = {
+  small: "max-w-lg",
+  medium: "max-w-3xl",
+  large: "max-w-5xl",
+  full: "max-w-7xl"
+};
 
-const Modal = ({
+function Modal({
   isOpen,
   onClose,
   title,
   children,
-  size = 'medium',
+  size = "medium",
   showCloseButton = true
-}) => {
+}) {
   const modalRef = useRef(null);
   const previousFocusRef = useRef(null);
+  const shouldReduceMotion = useReducedMotion();
 
-  // Size variants
-  const sizeStyles = {
-    small: 'max-w-md',
-    medium: 'max-w-2xl',
-    large: 'max-w-4xl',
-    full: 'max-w-7xl'
-  };
-
-  // Handle escape key
   useEffect(() => {
     const handleEscape = (event) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         onClose();
       }
     };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
+      document.addEventListener("keydown", handleEscape);
+      return () => document.removeEventListener("keydown", handleEscape);
     }
   }, [isOpen, onClose]);
 
-  // Focus management
   useEffect(() => {
     if (isOpen) {
-      // Store the currently focused element
       previousFocusRef.current = document.activeElement;
-
-      // Focus the modal
-      if (modalRef.current) {
-        modalRef.current.focus();
-      }
-
-      // Prevent body scroll
-      document.body.style.overflow = 'hidden';
+      modalRef.current?.focus();
+      document.body.style.overflow = "hidden";
     } else {
-      // Restore previous focus
-      if (previousFocusRef.current) {
-        previousFocusRef.current.focus();
-      }
-
-      // Restore body scroll
-      document.body.style.overflow = 'unset';
+      previousFocusRef.current?.focus?.();
+      document.body.style.overflow = "unset";
     }
 
-    // Cleanup on unmount
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [isOpen]);
 
-  // Handle backdrop click
   const handleBackdropClick = (event) => {
     if (event.target === event.currentTarget) {
       onClose();
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ease-out"
-      style={{
-        backgroundColor: 'rgba(15, 23, 42, 0.8)',
-        backdropFilter: 'blur(4px)'
-      }}
-      onClick={handleBackdropClick}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modal-title"
-    >
-      <div
-        ref={modalRef}
-        className={`w-full ${sizeStyles[size]} transform transition-all duration-300 ease-out ${
-          isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        }`}
-        tabIndex={-1}
-        role="document"
-      >
-        <div className="rounded-3xl border border-white/10 bg-slate-900 shadow-2xl">
-          {/* Header with title and close button */}
-          {(title || showCloseButton) && (
-            <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
-              {title && (
-                <h2 id="modal-title" className="text-xl font-semibold text-white">
-                  {title}
-                </h2>
-              )}
-              {showCloseButton && (
-                <button
-                  onClick={onClose}
-                  className="rounded-full p-2 text-slate-400 hover:bg-white/10 hover:text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                  aria-label="Close modal"
-                >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              )}
-            </div>
-          )}
+    <AnimatePresence>
+      {isOpen ? (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={handleBackdropClick}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          variants={shouldReduceMotion ? undefined : backdropVariants}
+          style={{
+            background: "rgba(2, 8, 23, 0.72)",
+            willChange: "opacity, backdrop-filter"
+          }}
+        >
+          <motion.div
+            ref={modalRef}
+            tabIndex={-1}
+            role="document"
+            className={`relative w-full ${sizeStyles[size] || sizeStyles.medium}`}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            variants={shouldReduceMotion ? undefined : modalVariants}
+            style={{ willChange: "transform, opacity, filter" }}
+          >
+            <div className="glass-panel ambient-noise relative overflow-hidden rounded-[var(--radius-2xl)] border border-white/10 shadow-[var(--shadow-xl)]">
+              {(title || showCloseButton) ? (
+                <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
+                  {title ? (
+                    <div>
+                      <p className="text-caption">Focused Surface</p>
+                      <h2 id="modal-title" className="mt-2 font-display text-2xl font-semibold text-white">
+                        {title}
+                      </h2>
+                    </div>
+                  ) : <span />}
+                  {showCloseButton ? (
+                    <button
+                      onClick={onClose}
+                      className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/5 text-slate-300 transition-colors duration-300 hover:border-cyan-300/40 hover:text-white"
+                      aria-label="Close modal"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
 
-          {/* Content */}
-          <div className="px-6 py-4">
-            {children}
-          </div>
-        </div>
-      </div>
-    </div>
+              <div className="px-6 py-6">{children}</div>
+            </div>
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
-};
+}
 
 export default Modal;

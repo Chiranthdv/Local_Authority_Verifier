@@ -1,17 +1,22 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const router = express.Router();
 const User = require("../models/User");
 const WorkerProfile = require("../models/WorkerProfile");
 const Document = require("../models/Document");
 const Job = require("../models/Job");
+const RefreshToken = require("../models/RefreshToken");
 const calculateTrustScore = require("../utils/trustScore");
 const { loginIpLimiter } = require("../middleware/rateLimiters");
 const auth = require("../middleware/auth");
 const role = require("../middleware/role");
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ACCESS_TOKEN_COOKIE = "accessToken";
+const REFRESH_TOKEN_COOKIE = "refreshToken";
+const REFRESH_TOKEN_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 
 function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -23,6 +28,51 @@ function sanitizeEmail(value) {
 
 function extractPassword(value) {
   return typeof value === "string" ? value : "";
+}
+
+function signAccessToken(user) {
+  return jwt.sign(
+    { userId: user._id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: "15m" }
+  );
+}
+
+function hashRefreshToken(refreshToken) {
+  return crypto.createHash("sha256").update(refreshToken).digest("hex");
+}
+
+async function createRefreshTokenRecord(userId) {
+  const refreshToken = crypto.randomBytes(48).toString("hex");
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_LIFETIME_MS);
+
+  await RefreshToken.create({
+    userId,
+    tokenHash: hashRefreshToken(refreshToken),
+    expiresAt
+  });
+
+  return refreshToken;
+}
+
+function setAccessTokenCookie(res, token) {
+  res.cookie(ACCESS_TOKEN_COOKIE, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 15 * 60 * 1000
+  });
+}
+
+function setRefreshTokenCookie(res, token) {
+  res.cookie(REFRESH_TOKEN_COOKIE, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: REFRESH_TOKEN_LIFETIME_MS
+  });
 }
 
 router.post("/login", loginIpLimiter, async (req, res) => {
@@ -52,14 +102,12 @@ router.post("/login", loginIpLimiter, async (req, res) => {
       return res.status(400).json({ error: "Invalid credentials" });
     }
 
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const accessToken = signAccessToken(user);
+    const refreshToken = await createRefreshTokenRecord(user._id);
+    setAccessTokenCookie(res, accessToken);
+    setRefreshTokenCookie(res, refreshToken);
 
     return res.json({
-      token,
       role: "admin",
       name: user.name
     });

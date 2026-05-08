@@ -6,10 +6,7 @@ let mongoServer;
 async function connect() {
   mongoServer = await MongoMemoryServer.create();
   const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  });
+  await mongoose.connect(mongoUri);
 }
 
 async function clearDatabase() {
@@ -20,8 +17,10 @@ async function clearDatabase() {
 }
 
 async function closeDatabase() {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
+  if (mongoose.connection.readyState === 1) {
+    await mongoose.connection.dropDatabase();
+    await mongoose.connection.close();
+  }
   if (mongoServer) {
     await mongoServer.stop();
   }

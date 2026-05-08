@@ -21,11 +21,7 @@ const DEFAULT_REVIEW_LIMIT = 20;
 const MAX_REVIEW_LIMIT = 50;
 const reviewCooldown = createActionCooldownMiddleware({
   cooldownMs: REVIEW_COOLDOWN_MS,
-  keyGenerator: (req) => {
-    const userId = req.user?.userId;
-    if (!userId) return "";
-    return `review:${userId}`;
-  },
+  actionType: "review",
   message: "Please wait before submitting another review."
 });
 

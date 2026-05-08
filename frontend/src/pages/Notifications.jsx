@@ -82,6 +82,7 @@ function Notifications() {
   const markRead = async (id) => {
     try {
       await api.patch(`/notifications/${id}/read`);
+      window.dispatchEvent(new CustomEvent("app:notification:read", { detail: { id } }));
       setNotifications((current) => current.map((item) => (
         item._id === id
           ? { ...item, isRead: true, readAt: new Date().toISOString() }
@@ -95,6 +96,7 @@ function Notifications() {
   const markAllRead = async () => {
     try {
       await api.patch("/notifications/read-all");
+      window.dispatchEvent(new CustomEvent("app:notification:read-all"));
       setNotifications((current) => current.map((item) => ({ ...item, isRead: true })));
     } catch (actionError) {
       setError("Could not mark all notifications as read.");

@@ -63,7 +63,6 @@ function WorkerOnboarding() {
         : await api.get("/documents/my");
       syncDocumentState(response.data);
     } catch (error) {
-      console.error("Failed to load documents:", error);
       syncDocumentState([]);
     }
   };
@@ -82,8 +81,8 @@ function WorkerOnboarding() {
         location: data.location || "",
         phone: data.phone || ""
       });
-    } catch (error) {
-      console.error("Failed to load profile:", error);
+    } catch {
+      // Worker may not have a profile yet.
     } finally {
       setInitialLoading(false);
     }
@@ -111,23 +110,9 @@ function WorkerOnboarding() {
     }
 
     const payload = buildWorkerPayload();
-    console.log("[ONBOARDING] Creating worker profile before upload", payload);
-
-    try {
-      const { data } = await api.post("/workers/profile", payload, { timeout: REQUEST_TIMEOUT_MS });
-      console.log("[ONBOARDING] Worker profile created", data);
-      setProfileId(data?._id || "");
-      return data?._id || "";
-    } catch (error) {
-      console.error("[ONBOARDING] Worker profile create failed", {
-        message: error?.message,
-        code: error?.code,
-        status: error?.response?.status,
-        data: error?.response?.data
-      });
-
-      throw error;
-    }
+    const { data } = await api.post("/workers/profile", payload, { timeout: REQUEST_TIMEOUT_MS });
+    setProfileId(data?._id || "");
+    return data?._id || "";
   };
 
   const validateStep = (step) => {
@@ -174,22 +159,13 @@ function WorkerOnboarding() {
 
     try {
       const profileData = buildWorkerPayload();
-      console.log("[ONBOARDING] Submitting worker profile", profileData);
-
       const { data } = await api.post("/workers/profile", profileData, { timeout: REQUEST_TIMEOUT_MS });
-      console.log("[ONBOARDING] Worker profile submit success", data);
 
       if (data?._id) {
         setProfileId(data._id);
       }
-      setMessage("Profile submitted successfully!");
+      setMessage("Profile submitted successfully.");
     } catch (error) {
-      console.error("[ONBOARDING] Worker profile submit failed", {
-        message: error?.message,
-        code: error?.code,
-        status: error?.response?.status,
-        data: error?.response?.data
-      });
       setMessage(getErrorMessage(error, "Could not save profile."));
     } finally {
       setLoading(false);
@@ -202,25 +178,8 @@ function WorkerOnboarding() {
     formData.append("documentType", "certificate");
     formData.append("type", "certificate");
 
-    console.log("[ONBOARDING] Uploading certificate", {
-      name: file?.name,
-      type: file?.type,
-      size: file?.size
-    });
-
-    try {
-      const response = await api.post("/documents/upload", formData, { timeout: REQUEST_TIMEOUT_MS });
-      console.log("[ONBOARDING] Certificate upload success", response.data);
-      return response.data;
-    } catch (error) {
-      console.error("[ONBOARDING] Certificate upload failed", {
-        message: error?.message,
-        code: error?.code,
-        status: error?.response?.status,
-        data: error?.response?.data
-      });
-      throw error;
-    }
+    const response = await api.post("/documents/upload", formData, { timeout: REQUEST_TIMEOUT_MS });
+    return response.data;
   };
 
   const submitCertificates = async () => {
@@ -236,7 +195,7 @@ function WorkerOnboarding() {
       }
       await loadWorkerDocuments();
       setCertificateFiles([]);
-      setMessage("Certificates uploaded successfully!");
+      setMessage("Certificates uploaded successfully.");
     } catch (error) {
       setMessage(getErrorMessage(error, "Could not upload certificates."));
     } finally {
@@ -248,7 +207,7 @@ function WorkerOnboarding() {
     try {
       await api.delete(`/documents/${documentId}`);
       await loadWorkerDocuments();
-      setMessage("Certificate removed successfully!");
+      setMessage("Certificate removed successfully.");
     } catch (error) {
       setMessage(error.response?.data?.error || "Could not remove certificate.");
     }
@@ -270,7 +229,7 @@ function WorkerOnboarding() {
         <div className="mb-8">
           <h1 className="text-3xl font-semibold text-white">Worker Verification Profile</h1>
           <p className="mt-2 text-slate-400">
-            {user?.name ? `${user.name}, let\'s get you verified.` : "Let\'s get you verified."}
+            {user?.name ? `${user.name}, let's get you verified.` : "Let's get you verified."}
           </p>
         </div>
 
@@ -286,7 +245,7 @@ function WorkerOnboarding() {
             <div
               className="h-2 rounded-full bg-cyan-400 transition-all duration-300"
               style={{ width: `${progressWidth}%` }}
-            ></div>
+            />
           </div>
           <p className="mt-2 text-slate-300">{STEPS[currentStep].description}</p>
         </div>
@@ -300,19 +259,19 @@ function WorkerOnboarding() {
                   type="number"
                   placeholder="Age (18-80)"
                   value={form.age}
-                  onChange={(e) => setForm({ ...form, age: e.target.value })}
+                  onChange={(event) => setForm({ ...form, age: event.target.value })}
                   className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
                 />
                 <input
                   placeholder="Location (e.g., Bangalore)"
                   value={form.location}
-                  onChange={(e) => setForm({ ...form, location: e.target.value })}
+                  onChange={(event) => setForm({ ...form, location: event.target.value })}
                   className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
                 />
                 <input
                   placeholder="Phone number"
                   value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  onChange={(event) => setForm({ ...form, phone: event.target.value })}
                   className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
                 />
               </div>
@@ -325,7 +284,7 @@ function WorkerOnboarding() {
               <div className="grid gap-4">
                 <select
                   value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  onChange={(event) => setForm({ ...form, category: event.target.value })}
                   className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
                 >
                   <option value="plumber">Plumber</option>
@@ -340,26 +299,26 @@ function WorkerOnboarding() {
                   type="number"
                   placeholder="Years of experience"
                   value={form.experience}
-                  onChange={(e) => setForm({ ...form, experience: e.target.value })}
+                  onChange={(event) => setForm({ ...form, experience: event.target.value })}
                   className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
                 />
                 <input
                   type="number"
                   placeholder="Hourly rate (Rs)"
                   value={form.hourlyRate}
-                  onChange={(e) => setForm({ ...form, hourlyRate: e.target.value })}
+                  onChange={(event) => setForm({ ...form, hourlyRate: event.target.value })}
                   className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
                 />
                 <input
                   placeholder="Skills (comma separated)"
                   value={form.skills}
-                  onChange={(e) => setForm({ ...form, skills: e.target.value })}
+                  onChange={(event) => setForm({ ...form, skills: event.target.value })}
                   className="rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
                 />
                 <textarea
                   placeholder="Bio"
                   value={form.bio}
-                  onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                  onChange={(event) => setForm({ ...form, bio: event.target.value })}
                   className="min-h-28 rounded-2xl border border-white/10 bg-slate-900 px-4 py-3"
                 />
               </div>
@@ -383,22 +342,22 @@ function WorkerOnboarding() {
                     type="file"
                     accept=".pdf,image/png,image/jpeg"
                     multiple
-                    onChange={(e) => setCertificateFiles(Array.from(e.target.files || []))}
-                    className="mb-4 w-full rounded-xl border border-dashed border-white/20 bg-slate-800 p-4 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-purple-600 file:px-4 file:py-2 file:text-white hover:file:bg-purple-700"
+                    onChange={(event) => setCertificateFiles(Array.from(event.target.files || []))}
+                    className="mb-4 w-full rounded-xl border border-dashed border-white/20 bg-slate-800 p-4 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-600 file:px-4 file:py-2 file:text-white hover:file:bg-cyan-500"
                   />
 
                   {certificateFiles.length > 0 && (
                     <div className="mb-4 space-y-2">
-                      <p className="text-sm font-medium text-purple-300">Selected Files:</p>
+                      <p className="text-sm font-medium text-cyan-300">Selected Files:</p>
                       {certificateFiles.map((file, index) => (
-                        <div key={`${file.name}-${index}`} className="flex items-center justify-between rounded border border-purple-500/20 bg-purple-900/20 p-2">
-                          <span className="text-sm text-purple-300">{file.name}</span>
+                        <div key={`${file.name}-${index}`} className="flex items-center justify-between rounded border border-cyan-500/20 bg-cyan-900/20 p-2">
+                          <span className="text-sm text-cyan-300">{file.name}</span>
                           <button
                             type="button"
                             onClick={() => removeCertificateFile(index)}
                             className="text-sm text-red-400 hover:text-red-300"
                           >
-                            x
+                            Remove
                           </button>
                         </div>
                       ))}
@@ -421,19 +380,26 @@ function WorkerOnboarding() {
                     <h4 className="mb-2 text-sm font-semibold text-white">Uploaded Certificates</h4>
                     <div className="space-y-2">
                       {certificates.map((doc) => (
-                        <div key={doc._id} className="flex items-center justify-between rounded-lg border border-purple-500/20 bg-purple-900/20 p-3">
-                          <div>
-                            <p className="text-sm font-medium text-purple-300">{doc.originalName}</p>
-                            <p className="text-xs capitalize text-purple-400">Status: {doc.status}</p>
+                        <div key={doc._id} className="rounded-lg border border-cyan-500/20 bg-cyan-900/20 p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-medium text-cyan-300">{doc.originalName}</p>
+                              <p className="text-xs capitalize text-cyan-400">Status: {doc.status}</p>
+                              {(doc.rejectionReason || doc.reviewNote) && (
+                                <p className="mt-1 text-xs text-rose-300">
+                                  Reason: {doc.rejectionReason || doc.reviewNote}
+                                </p>
+                              )}
+                            </div>
+                            <Button
+                              onClick={() => removeDocument(doc._id)}
+                              variant="danger"
+                              size="small"
+                              className="text-xs"
+                            >
+                              Remove
+                            </Button>
                           </div>
-                          <Button
-                            onClick={() => removeDocument(doc._id)}
-                            variant="danger"
-                            size="small"
-                            className="text-xs"
-                          >
-                            Remove
-                          </Button>
                         </div>
                       ))}
                     </div>

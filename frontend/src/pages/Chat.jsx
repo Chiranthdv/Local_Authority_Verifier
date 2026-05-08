@@ -13,6 +13,7 @@ function formatTime(value) {
 function Chat() {
   const [searchParams] = useSearchParams();
   const workerIdFromQuery = searchParams.get("workerId") || "";
+  const customerIdFromQuery = searchParams.get("customerId") || "";
   const [conversations, setConversations] = useState([]);
   const [selectedConversationId, setSelectedConversationId] = useState("");
   const [messages, setMessages] = useState([]);
@@ -73,13 +74,16 @@ function Chat() {
 
   useEffect(() => {
     const startChatIfNeeded = async () => {
-      if (!workerIdFromQuery) {
+      if (!workerIdFromQuery && !customerIdFromQuery) {
         await loadConversations();
         return;
       }
 
       try {
-        const { data } = await api.post("/chats/start", { workerId: workerIdFromQuery });
+        const payload = workerIdFromQuery
+          ? { workerId: workerIdFromQuery }
+          : { customerId: customerIdFromQuery };
+        const { data } = await api.post("/chats/start", payload);
         await loadConversations(data?._id);
       } catch (startError) {
         await loadConversations();
@@ -87,7 +91,7 @@ function Chat() {
     };
 
     startChatIfNeeded();
-  }, [workerIdFromQuery]);
+  }, [workerIdFromQuery, customerIdFromQuery]);
 
   useEffect(() => {
     loadMessages(selectedConversationId);

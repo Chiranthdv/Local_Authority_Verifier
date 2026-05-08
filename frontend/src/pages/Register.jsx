@@ -20,31 +20,21 @@ function Register() {
     setErrors({});
     setLoading(true);
 
-    console.log("[REGISTER] Submitting form:", { name: form.name, email: form.email, role: form.role });
-
     try {
-      const registerRes = await api.post("/auth/register", form);
-      console.log("[REGISTER] Registration successful:", registerRes.data);
-
+      await api.post("/auth/register", form);
       const loginRes = await api.post("/auth/login", { email: form.email, password: form.password });
-      console.log("[REGISTER] Login successful");
-      await login(loginRes.data.token);
+      await login();
 
       if (form.role === "worker") {
         navigate("/worker/onboarding");
+      } else if (loginRes.data.role === "admin") {
+        navigate("/admin/dashboard");
       } else {
         navigate("/");
       }
     } catch (error) {
-      console.error("[REGISTER] Error:", {
-        status: error.response?.status,
-        message: error.response?.data?.error,
-        fullError: error.response?.data
-      });
-
       const backendError = error.response?.data?.error || error.message || "Cannot connect to backend server";
-      
-      // Map specific errors to fields
+
       const newErrors = {};
       if (backendError.includes("All fields are required")) {
         newErrors.name = "Please fill all fields";
@@ -56,7 +46,6 @@ function Register() {
       } else if (backendError.includes("Password must be at least")) {
         newErrors.password = backendError;
       } else {
-        // Show backend error for all other cases
         newErrors.form = backendError;
       }
 
