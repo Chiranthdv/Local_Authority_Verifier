@@ -129,6 +129,15 @@ function CustomerRequests() {
                 </button>
               )}
 
+              {item.status === "accepted" && (
+                <button
+                  onClick={() => navigate(`/chats?workerId=${item.workerId?._id || ""}`)}
+                  className="mt-3 rounded-full border border-cyan-300/40 px-4 py-2 text-sm text-cyan-200 transition hover:bg-cyan-400/10"
+                >
+                  💬 Open Chat
+                </button>
+              )}
+
               {item.status === "completed" && !item.hasReview && (
                 <button
                   onClick={() => openReviewModal(item)}

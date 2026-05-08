@@ -103,4 +103,50 @@ jobSchema.index(
   }
 );
 
+// When a job becomes accepted, ensure an active Conversation exists for it.
+// This makes chat available immediately after worker accepts booking.
+jobSchema.post('findOneAndUpdate', async function (doc) {
+  try {
+    if (!doc || doc.status !== 'accepted') return;
+
+    const Conversation = require('./Conversation');
+
+    // If Conversation exists, ensure it is enabled and points to the job.
+    // Conversation schema has unique {customerId, workerId}
+    let conversation = await Conversation.findOne({
+      customerId: doc.customerId,
+      workerId: doc.workerId
+    });
+
+    if (!conversation) {
+      conversation = await Conversation.create({
+        customerId: doc.customerId,
+        workerId: doc.workerId,
+        jobId: doc._id,
+        lastMessage: '',
+        lastMessageAt: new Date(),
+        isDisabled: false
+      });
+      return;
+    }
+
+    if (conversation.isDisabled) {
+      conversation.isDisabled = false;
+      conversation.disabledAt = null;
+      conversation.disabledReason = '';
+    }
+
+    if (String(conversation.jobId || '') !== String(doc._id)) {
+      conversation.jobId = doc._id;
+    }
+
+    conversation.lastMessageAt = conversation.lastMessageAt || new Date();
+    await conversation.save();
+  } catch (e) {
+    // Avoid breaking booking flow if conversation creation fails.
+    // Chat will still become available once users open /chats/start.
+  }
+});
+
 module.exports = mongoose.model("Job", jobSchema);
+

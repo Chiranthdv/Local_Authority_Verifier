@@ -139,11 +139,12 @@ function WorkerRequests() {
                   >
                     Mark Completed
                   </button>
+
                   <button
                     onClick={() => navigate(`/chats?customerId=${item.customerId?._id || ""}`)}
-                    className="rounded-full border border-cyan-300/40 px-4 py-2 text-sm text-cyan-200"
+                    className="rounded-full border border-cyan-300/40 px-4 py-2 text-sm text-cyan-200 transition hover:bg-cyan-400/10"
                   >
-                    Open Chat
+                    💬 Open Chat
                   </button>
                 </div>
               )}
