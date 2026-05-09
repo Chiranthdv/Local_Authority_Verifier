@@ -9,8 +9,8 @@
     "test:integration": "jest --runInBand tests/integration",
     "test:perf": "jest --runInBand tests/perf",
     "start": "node server.js",
-    "start:clean": "kill-port 5000 5001 && nodemon server.js",
-    "dev": "nodemon server.js",
+    "start:clean": "kill-port 5000 5001 5002 && nodemon server.js",
+    "dev": "kill-port 5001 5002 && nodemon server.js",
     "seed:admin": "node scripts/seedAdmin.js",
     "migrate:document-storage": "node scripts/migrateDocumentStorage.js"
   },

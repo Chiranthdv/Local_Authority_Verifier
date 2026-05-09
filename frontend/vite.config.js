@@ -4,8 +4,9 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, "..", "");
-  const apiPort = env.API_PORT || "5001";
-  const apiTarget = `http://localhost:${apiPort}`;
+  const apiHost = process.env.API_HOST || env.API_HOST || "localhost";
+  const apiPort = process.env.API_PORT || env.API_PORT || "5001";
+  const apiTarget = `http://${apiHost}:${apiPort}`;
 
   return {
     envDir: "..",

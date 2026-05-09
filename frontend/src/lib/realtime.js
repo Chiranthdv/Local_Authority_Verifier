@@ -1,4 +1,5 @@
 import { io } from "socket.io-client";
+import { getStoredAccessToken } from "./api";
 
 let socketInstance = null;
 
@@ -21,7 +22,10 @@ export function connectRealtime() {
 
   socketInstance = io(getBackendUrl(), {
     transports: ["websocket", "polling"],
-    withCredentials: true
+    withCredentials: true,
+    auth: {
+      token: getStoredAccessToken() || undefined
+    }
   });
   return socketInstance;
 }

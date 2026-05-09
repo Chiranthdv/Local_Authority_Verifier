@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import api from "../lib/api";
+import api, { setStoredAccessToken } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
 
@@ -53,6 +53,11 @@ function Login() {
         } else {
           throw authError;
         }
+      }
+
+      const accessToken = data?.accessToken || data?.token || "";
+      if (typeof accessToken === "string" && accessToken.trim()) {
+        setStoredAccessToken(accessToken);
       }
 
       await login();

@@ -129,7 +129,7 @@ async function issueSession(res, user) {
   const refreshToken = await createRefreshTokenRecord(user._id);
   setAccessTokenCookie(res, accessToken);
   setRefreshTokenCookie(res, refreshToken);
-  return refreshToken;
+  return { accessToken, refreshToken };
 }
 
 function isAccountLocked(user) {
@@ -300,7 +300,7 @@ router.post("/login", loginIpLimiter, async (req, res) => {
     await clearLoginFailureState(user);
 
     console.log("[LOGIN] Generating session tokens");
-    await issueSession(res, user);
+    const { accessToken } = await issueSession(res, user);
 
     const workerProfile = user.role === "worker"
       ? await WorkerProfile.findOne({ userId: user._id }).select("_id")
@@ -311,7 +311,9 @@ router.post("/login", loginIpLimiter, async (req, res) => {
       role: user.role,
       name: user.name,
       hasProfile: Boolean(workerProfile),
-      workerProfileId: workerProfile?._id ?? null
+      workerProfileId: workerProfile?._id ?? null,
+      accessToken,
+      token: accessToken
     });
   } catch (err) {
     console.error("[LOGIN] Error during login:", {
@@ -346,9 +348,10 @@ router.post("/refresh", requireRefreshToken, async (req, res) => {
     tokenRecord.lastUsedAt = new Date();
     await tokenRecord.save({ validateBeforeSave: false });
 
-    setAccessTokenCookie(res, signAccessToken(user));
+    const accessToken = signAccessToken(user);
+    setAccessTokenCookie(res, accessToken);
     setRefreshTokenCookie(res, req.refreshToken);
-    return res.json({ message: "Session refreshed" });
+    return res.json({ message: "Session refreshed", accessToken, token: accessToken });
   } catch (err) {
     return res.status(500).json({ error: "Could not refresh session" });
   }

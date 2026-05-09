@@ -40,7 +40,7 @@ const Button = ({
   className = "",
   ...props
 }) => {
-  const Component = motion(as);
+  const Component = React.useMemo(() => motion.create(as), [as]);
   const isButton = as === "button";
 
   return (

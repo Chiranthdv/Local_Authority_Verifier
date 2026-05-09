@@ -1,6 +1,10 @@
 import React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
-import api, { clearSessionExpiryDispatch } from "../lib/api";
+import api, {
+  clearSessionExpiryDispatch,
+  clearStoredAccessToken,
+  getStoredAccessToken
+} from "../lib/api";
 import { connectRealtime, disconnectRealtime } from "../lib/realtime";
 import { toast } from "react-toastify";
 
@@ -18,6 +22,7 @@ export function AuthProvider({ children }) {
     setSessionActive(false);
     setUser(null);
     disconnectRealtime();
+    clearStoredAccessToken();
 
     if (sessionExpired && message) {
       setSessionExpiredMessage(message);
@@ -141,7 +146,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider
       value={{
-        token: null,
+        token: getStoredAccessToken() || null,
         user,
         loading,
         login,

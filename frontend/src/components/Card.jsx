@@ -18,7 +18,10 @@ function Card({
   ...props
 }) {
   const shouldReduceMotion = useReducedMotion();
-  const Component = interactive ? motion(as) : as;
+  const Component = React.useMemo(
+    () => (interactive ? motion.create(as) : as),
+    [interactive, as]
+  );
 
   return (
     <Component

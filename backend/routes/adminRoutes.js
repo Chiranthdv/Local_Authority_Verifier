@@ -109,7 +109,9 @@ router.post("/login", loginIpLimiter, async (req, res) => {
 
     return res.json({
       role: "admin",
-      name: user.name
+      name: user.name,
+      accessToken,
+      token: accessToken
     });
   } catch (error) {
     console.log(error);

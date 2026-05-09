@@ -21,13 +21,27 @@ function parseCookies(cookieHeader) {
   }, {});
 }
 
+function extractBearerToken(headerValue) {
+  if (typeof headerValue !== "string") {
+    return "";
+  }
+
+  const [scheme, token] = headerValue.trim().split(/\s+/);
+  if (!scheme || !token) {
+    return "";
+  }
+
+  return scheme.toLowerCase() === "bearer" ? token : "";
+}
+
 module.exports = async (req, res, next) => {
   if (typeof next !== "function") {
     return res.status(500).json({ error: "Auth middleware misconfigured", message: "next is not a function" });
   }
 
   const cookies = parseCookies(req.headers.cookie);
-  const token = cookies.accessToken || req.headers.authorization?.split(" ")[1];
+  const bearerToken = extractBearerToken(req.headers.authorization);
+  const token = bearerToken || cookies.accessToken;
 
   if (!token) {
     return res.status(401).json({ error: "Unauthorized" });

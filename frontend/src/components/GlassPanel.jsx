@@ -8,7 +8,10 @@ function GlassPanel({
   interactive = false,
   ...props
 }) {
-  const Component = interactive ? motion(as) : as;
+  const Component = React.useMemo(
+    () => (interactive ? motion.create(as) : as),
+    [interactive, as]
+  );
   const motionProps = interactive
     ? {
         whileHover: {
