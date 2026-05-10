@@ -9,7 +9,7 @@
     "test:unit:coverage": "jest --runInBand tests/unit --coverage --coverageDirectory=coverage",
     "test:integration": "jest --runInBand tests/integration",
     "test:perf": "jest --runInBand tests/perf",
-    "lint": "eslint .",
+    "lint": "eslint --config eslint.config.js .",
     "start": "node server.js",
     "start:clean": "kill-port 5000 5001 5002 && nodemon server.js",
     "dev": "kill-port 5001 5002 && nodemon server.js",
