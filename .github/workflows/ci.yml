@@ -49,7 +49,7 @@ jobs:
 
       - name: "🔎 Backend — ESLint"
         working-directory: backend
-        run: npx eslint .
+        run: npm run lint
 
       - name: "✅ Backend — Syntax check (node --check)"
         working-directory: backend
