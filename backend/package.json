@@ -6,8 +6,10 @@
   "scripts": {
     "test": "jest --runInBand",
     "test:unit": "jest --runInBand tests/unit",
+    "test:unit:coverage": "jest --runInBand tests/unit --coverage --coverageDirectory=coverage",
     "test:integration": "jest --runInBand tests/integration",
     "test:perf": "jest --runInBand tests/perf",
+    "lint": "eslint .",
     "start": "node server.js",
     "start:clean": "kill-port 5000 5001 5002 && nodemon server.js",
     "dev": "kill-port 5001 5002 && nodemon server.js",
@@ -37,6 +39,7 @@
   },
   "devDependencies": {
     "autocannon": "^8.0.0",
+    "eslint": "^9.39.0",
     "jest": "^29.7.0",
     "mongodb-memory-server": "^8.14.1",
     "supertest": "^6.3.3"

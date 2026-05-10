@@ -1,0 +1,89 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Docker image tag to deploy"
+        required: false
+        default: "latest"
+
+permissions:
+  contents: read
+  packages: read
+  deployments: write
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/${{ github.repository }}/backend
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository }}/frontend
+
+jobs:
+  deploy-staging:
+    name: "🚀 Deploy to Staging"
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+    steps:
+      - name: "📥 Checkout source code"
+        uses: actions/checkout@v4
+
+      - name: "🔑 Login to GHCR"
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "🏷️ Determine image tag"
+        id: tag
+        run: |
+          if [ "${{ github.event.inputs.image_tag }}" != "" ]; then
+            echo "tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=sha-$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: "🚀 Deploy staging via docker compose"
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.tag }}
+          JWT_SECRET: ${{ secrets.STAGING_JWT_SECRET }}
+          DOCUMENT_ACCESS_SECRET: ${{ secrets.STAGING_DOC_SECRET }}
+        run: |
+          echo "🚀 Deploying with tag: $IMAGE_TAG"
+          docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --pull always --wait --timeout 120
+          echo "✅ Staging deployed"
+
+      - name: "📋 Deployment status"
+        if: always()
+        run: docker compose -f docker-compose.staging.yml ps
+
+  smoke-test:
+    name: "💨 Smoke Testing"
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    steps:
+      - name: "📥 Checkout source code"
+        uses: actions/checkout@v4
+
+      - name: "⚙️ Setup Node.js"
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: "💨 Run smoke tests"
+        env:
+          STAGING_BACKEND_URL: http://localhost:5001
+          STAGING_FRONTEND_URL: http://localhost:5173
+        run: node scripts/smoke-test.js
+
+      - name: "📊 Upload smoke test results"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-results
+          path: smoke-test-results.json
+          retention-days: 14

@@ -1,0 +1,117 @@
+# Monitoring & Rollback — runs on schedule + manual trigger
+name: Monitoring & Rollback
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"  # Every 5 minutes
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Action to perform"
+        required: true
+        type: choice
+        options:
+          - health-check
+          - rollback
+      rollback_tag:
+        description: "Tag to rollback to (only for rollback action)"
+        required: false
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  health-monitor:
+    name: "📡 Health Monitoring"
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action != 'rollback'
+    steps:
+      - name: "📥 Checkout source code"
+        uses: actions/checkout@v4
+
+      - name: "❤️ Backend health check"
+        id: backend_health
+        run: |
+          PROD_URL="${{ vars.PRODUCTION_BACKEND_URL || 'http://localhost:5001' }}"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$PROD_URL/" || echo "000")
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ Backend is healthy (HTTP $STATUS)"
+          else
+            echo "❌ Backend is DOWN (HTTP $STATUS)"
+          fi
+
+      - name: "❤️ Frontend health check"
+        id: frontend_health
+        run: |
+          PROD_URL="${{ vars.PRODUCTION_FRONTEND_URL || 'http://localhost:5173' }}"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$PROD_URL/" || echo "000")
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ Frontend is healthy (HTTP $STATUS)"
+          else
+            echo "❌ Frontend is DOWN (HTTP $STATUS)"
+          fi
+
+      - name: "🔍 Container resource check"
+        run: |
+          echo "=== Docker Stats ==="
+          docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}" 2>/dev/null || echo "No containers running"
+
+      - name: "📊 Generate health report"
+        if: always()
+        run: |
+          cat > health-report.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "backend_status": "${{ steps.backend_health.outputs.status }}",
+            "frontend_status": "${{ steps.frontend_health.outputs.status }}",
+            "healthy": $([ "${{ steps.backend_health.outputs.status }}" = "200" ] && [ "${{ steps.frontend_health.outputs.status }}" = "200" ] && echo "true" || echo "false")
+          }
+          EOF
+          cat health-report.json
+
+      - name: "🚨 Alert on failure"
+        if: steps.backend_health.outputs.status != '200' || steps.frontend_health.outputs.status != '200'
+        run: |
+          echo "::error::🚨 PRODUCTION IS UNHEALTHY!"
+          echo "Backend: ${{ steps.backend_health.outputs.status }}"
+          echo "Frontend: ${{ steps.frontend_health.outputs.status }}"
+          echo "Consider triggering a rollback via workflow_dispatch"
+
+  rollback:
+    name: "🔄 Manual Rollback"
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'rollback'
+    environment:
+      name: production
+    steps:
+      - name: "📥 Checkout source code"
+        uses: actions/checkout@v4
+
+      - name: "🔑 Login to GHCR"
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "🔄 Rollback deployment"
+        env:
+          IMAGE_TAG: ${{ github.event.inputs.rollback_tag }}
+          JWT_SECRET: ${{ secrets.PROD_JWT_SECRET }}
+          DOCUMENT_ACCESS_SECRET: ${{ secrets.PROD_DOC_SECRET }}
+        run: |
+          echo "🔄 Rolling back to tag: $IMAGE_TAG"
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --pull always --wait --timeout 180
+          echo "$IMAGE_TAG" > .current-tag
+          echo "✅ Rollback complete"
+
+      - name: "❤️ Post-rollback health check"
+        run: |
+          sleep 30
+          BACKEND=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/ || echo "000")
+          FRONTEND=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5173/ || echo "000")
+          echo "Backend: $BACKEND | Frontend: $FRONTEND"
+          [ "$BACKEND" = "200" ] && [ "$FRONTEND" = "200" ] && echo "✅ Rollback healthy" || echo "❌ Rollback unhealthy"

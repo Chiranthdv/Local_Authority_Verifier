@@ -1,0 +1,25 @@
+# Docker Compose — Staging Override
+services:
+  backend:
+    image: ${BACKEND_IMAGE:-ghcr.io/chiranth-45/practice4/backend}:${IMAGE_TAG:-latest}
+    container_name: staging-backend
+    build: !reset null
+    environment:
+      NODE_ENV: staging
+      API_PORT: "5001"
+      PORT: "5001"
+      HOST: "0.0.0.0"
+      MONGO_URI: mongodb://mongo:27017/staging_db
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      JWT_SECRET: ${JWT_SECRET:-staging-jwt-secret}
+      DOCUMENT_ACCESS_SECRET: ${DOCUMENT_ACCESS_SECRET:-staging-doc-secret}
+    volumes: []
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-ghcr.io/chiranth-45/practice4/frontend}:${IMAGE_TAG:-latest}
+    container_name: staging-frontend
+    build: !reset null
+    environment:
+      VITE_API_BASE_URL: "/api"
+    volumes: []

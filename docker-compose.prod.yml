@@ -1,0 +1,45 @@
+# Docker Compose — Production Override
+services:
+  backend:
+    image: ${BACKEND_IMAGE:-ghcr.io/chiranth-45/practice4/backend}:${IMAGE_TAG:-latest}
+    container_name: prod-backend
+    build: !reset null
+    restart: always
+    environment:
+      NODE_ENV: production
+      API_PORT: "5001"
+      PORT: "5001"
+      HOST: "0.0.0.0"
+      MONGO_URI: mongodb://mongo:27017/production_db
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      JWT_SECRET: ${JWT_SECRET}
+      DOCUMENT_ACCESS_SECRET: ${DOCUMENT_ACCESS_SECRET}
+    volumes: []
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-ghcr.io/chiranth-45/practice4/frontend}:${IMAGE_TAG:-latest}
+    container_name: prod-frontend
+    build: !reset null
+    restart: always
+    environment:
+      VITE_API_BASE_URL: "/api"
+    volumes: []
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  mongo:
+    container_name: prod-mongo
+    restart: always
+
+  redis:
+    container_name: prod-redis
+    restart: always
