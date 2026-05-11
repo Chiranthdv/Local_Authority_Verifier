@@ -116,6 +116,7 @@ function Navbar() {
         { label: "My Requests", to: "/requests/my" },
         { label: "Chats", to: "/chats" },
         { label: "Notifications", to: "/notifications", badge: unreadCount },
+        { label: "My Profile", to: "/profile" },
         { label: "Logout", to: "#", onClick: handleLogout }
       ];
     }
@@ -126,15 +127,17 @@ function Navbar() {
         { label: "Requests", to: "/requests/inbox" },
         { label: "Chats", to: "/chats" },
         { label: "Notifications", to: "/notifications", badge: unreadCount },
+        { label: "My Profile", to: "/profile" },
         { label: "Logout", to: "#", onClick: handleLogout }
       ];
     }
 
-    return [
-      { label: "Admin", to: "/admin/dashboard" },
-      { label: "Notifications", to: "/notifications", badge: unreadCount },
-      { label: "Logout", to: "#", onClick: handleLogout }
-    ];
+      return [
+        { label: "Admin", to: "/admin/dashboard" },
+        { label: "Notifications", to: "/notifications", badge: unreadCount },
+        { label: "My Profile", to: "/profile" },
+        { label: "Logout", to: "#", onClick: handleLogout }
+      ];
   }, [handleLogout, unreadCount, user]);
 
   return (

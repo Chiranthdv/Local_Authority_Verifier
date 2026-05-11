@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { toast } from "react-toastify";
+import api from "../lib/api";
 
 function BookingModal({ worker, onClose }) {
   const [form, setForm] = useState({
@@ -22,23 +23,11 @@ function BookingModal({ worker, onClose }) {
 
       setLoading(true);
 
-      const res = await fetch("http://localhost:5000/api/jobs/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          customerId: user._id,
-          workerId: worker?.userId?._id,
-          ...form
-        })
+      await api.post("/jobs", {
+        workerId: worker?.userId?._id,
+        ...form,
+        serviceDate: form.scheduledTime // Aligning with backend field name
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error();
-      }
 
       toast.success("✅ Booking confirmed!");
       onClose();

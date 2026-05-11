@@ -200,7 +200,14 @@ router.post("/register", async (req, res) => {
       return res.status(403).json({ error: "Public registration is allowed only for customer or worker roles" });
     }
 
-    console.log("[REGISTER] All validations passed, creating user");
+    console.log("[REGISTER] All validations passed, checking for existing user");
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      console.log("[REGISTER] Email already exists:", email);
+      return res.status(409).json({ error: "Email already registered" });
+    }
+
+    console.log("[REGISTER] Creating new user");
     const user = new User({ name, email, password, role });
     await user.save();
     console.log("[REGISTER] User created successfully:", user._id);

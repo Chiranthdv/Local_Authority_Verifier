@@ -13,6 +13,7 @@ import CustomerRequests from "./pages/CustomerRequests";
 import WorkerRequests from "./pages/WorkerRequests";
 import Notifications from "./pages/Notifications";
 import Chat from "./pages/Chat";
+import CustomerProfile from "./pages/CustomerProfile";
 
 function App() {
   return (
@@ -47,6 +48,14 @@ function App() {
               element={
                 <ProtectedRoute roles={["customer"]}>
                   <CustomerRequests />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute roles={["customer", "worker"]}>
+                  <CustomerProfile />
                 </ProtectedRoute>
               }
             />
