@@ -124,7 +124,7 @@ async function revokeRefreshToken(refreshToken) {
   );
 }
 
-async function issueSession(res, user) {
+  async function issueSession(res, user) {
   const accessToken = signAccessToken(user);
   const refreshToken = await createRefreshTokenRecord(user._id);
   setAccessTokenCookie(res, accessToken);
@@ -327,7 +327,8 @@ router.post("/login", loginIpLimiter, async (req, res) => {
       hasProfile: Boolean(workerProfile),
       workerProfileId: workerProfile?._id ?? null,
       accessToken,
-      token: accessToken
+      token: accessToken,
+      refreshToken
     });
   } catch (err) {
     console.error("[LOGIN] Error during login:", {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
@@ -15,6 +16,7 @@ const STEPS = [
 
 function WorkerOnboarding() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [profileId, setProfileId] = useState("");
   const [message, setMessage] = useState("");
@@ -88,6 +90,10 @@ function WorkerOnboarding() {
       // Worker may not have a profile yet.
     } finally {
       setInitialLoading(false);
+      // If profile already exists and is fully filled (has bio), redirect to dashboard
+      if (profileId || form.bio) {
+        navigate("/requests/inbox");
+      }
     }
   }, []);
 
@@ -175,6 +181,10 @@ function WorkerOnboarding() {
       setMessage(getErrorMessage(error, "Could not save profile."));
     } finally {
       setLoading(false);
+      // Redirect to inbox after successful submission
+      setTimeout(() => {
+        navigate("/requests/inbox");
+      }, 1500);
     }
   };
 
