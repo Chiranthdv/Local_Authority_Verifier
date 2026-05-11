@@ -4,9 +4,13 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
 let mongoServer;
 
 async function connect() {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
+  if (process.env.MONGO_URI) {
+    await mongoose.connect(process.env.MONGO_URI);
+  } else {
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
+    await mongoose.connect(mongoUri);
+  }
 }
 
 async function clearDatabase() {
