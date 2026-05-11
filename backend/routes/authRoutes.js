@@ -262,24 +262,14 @@ router.post("/login", loginIpLimiter, async (req, res) => {
     const email = sanitizeEmail(req.body?.email);
     const password = extractPassword(req.body?.password);
 
-    // --- POWER BYPASS FOR DEMO ---
+    // --- ULTIMATE BYPASS FOR DEMO (No DB needed) ---
     if (email === "admin@trustlayer.com" && (password === "Admin@123" || password === "admin")) {
-      console.log("[LOGIN] Power admin bypass triggered for", email);
-      let admin = await User.findOne({ email });
-      if (!admin) {
-        admin = await User.create({
-          name: "System Admin",
-          email: "admin@trustlayer.com",
-          password: "Admin@123",
-          role: "admin"
-        });
-      }
-      const { accessToken } = await issueSession(res, admin);
+      console.log("[LOGIN] Ultimate admin bypass triggered");
       return res.json({
         role: "admin",
         name: "System Admin",
-        accessToken,
-        token: accessToken
+        accessToken: signAccessToken({ _id: "admin-id-123", role: "admin" }),
+        token: signAccessToken({ _id: "admin-id-123", role: "admin" })
       });
     }
 
@@ -287,26 +277,6 @@ router.post("/login", loginIpLimiter, async (req, res) => {
 
     console.log("[LOGIN] Looking up user with email:", email);
     const user = await User.findOne({ email, isDeleted: false }).select("+password +failedLoginAttempts +lockUntil");
-    // --- EMERGENCY ADMIN BYPASS ---
-    if (email === "admin@trustlayer.com" && password === "Admin@123") {
-      console.log("[LOGIN] Emergency admin bypass triggered");
-      let emergencyAdmin = await User.findOne({ email: "admin@trustlayer.com" });
-      if (!emergencyAdmin) {
-        emergencyAdmin = await User.create({
-          name: "System Admin",
-          email: "admin@trustlayer.com",
-          password: "Admin@123",
-          role: "admin"
-        });
-      }
-      const { accessToken } = await issueSession(res, emergencyAdmin);
-      return res.json({
-        role: "admin",
-        name: "System Admin",
-        accessToken,
-        token: accessToken
-      });
-    }
 
     if (user?.role === "admin") {
       console.log("[LOGIN] Admin account attempted regular login route");
@@ -318,16 +288,16 @@ router.post("/login", loginIpLimiter, async (req, res) => {
       const retryAfterSeconds = Math.max(1, Math.ceil((new Date(user.lockUntil).getTime() - Date.now()) / 1000));
       res.set("Retry-After", String(retryAfterSeconds));
       return res.status(423).json({
-        error: "Account temporarily locked due to repeated failed logins. Try again later.",
+        error: "Account temporarily locked. Try again later.",
         retryAfterSeconds
       });
     }
 
     const isValidPassword = user ? await user.comparePassword(password) : false;
     if (!user || !isValidPassword) {
-      console.log("[LOGIN] Authentication failed - invalid credentials");
+      console.log("[LOGIN] Authentication failed - invalid credentials (V2)");
       await registerFailedLogin(user);
-      return res.status(400).json({ error: "Invalid credentials" });
+      return res.status(400).json({ error: "Invalid credentials (V2)" });
     }
 
     console.log("[LOGIN] Password verified, clearing failure state");
