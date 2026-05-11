@@ -4,6 +4,7 @@ const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 require("dotenv").config({ path: path.join(__dirname, ".env") });
 const { app } = require("./app");
+const User = require("./models/User");
 const { initRealtime } = require("./services/realtime");
 const { startOutboxProcessor, stopOutboxProcessor } = require("./services/outboxProcessor");
 const { startDataLifecycleCleanup, stopDataLifecycleCleanup } = require("./services/dataLifecycleCleanup");
@@ -58,6 +59,20 @@ async function bootstrap() {
   try {
     await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 10000 });
     console.log("MongoDB Connected");
+
+    // --- Seed Admin Account ---
+    const adminEmail = "admin@trustlayer.com";
+    const adminExists = await User.findOne({ email: adminEmail });
+    if (!adminExists) {
+      console.log("Seeding admin account...");
+      await User.create({
+        name: "System Admin",
+        email: adminEmail,
+        password: "Admin@123",
+        role: "admin"
+      });
+      console.log("Admin account created successfully.");
+    }
 
     startOutboxProcessor();
     startDataLifecycleCleanup();
