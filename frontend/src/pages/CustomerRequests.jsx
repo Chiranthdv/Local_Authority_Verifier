@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
 
 const STATUS_OPTIONS = ["all", "pending", "accepted", "rejected", "completed", "cancelled"];
 
 function CustomerRequests() {
+  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [status, setStatus] = useState("all");
   const [loading, setLoading] = useState(true);

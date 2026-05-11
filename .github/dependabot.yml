@@ -12,7 +12,7 @@ updates:
       - "dependencies"
       - "backend"
     reviewers:
-      - "chiranth-45"
+      - "Chiranthdv"
     commit-message:
       prefix: "chore(deps):"
 
@@ -27,7 +27,7 @@ updates:
       - "dependencies"
       - "frontend"
     reviewers:
-      - "chiranth-45"
+      - "Chiranthdv"
     commit-message:
       prefix: "chore(deps):"
 

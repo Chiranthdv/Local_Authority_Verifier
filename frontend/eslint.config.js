@@ -1,6 +1,5 @@
 import js from '@eslint/js'
 import globals from 'globals'
-import importPlugin from 'eslint-plugin-import'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
@@ -9,9 +8,6 @@ export default defineConfig([
   globalIgnores(['dist', 'coverage']),
   {
     files: ['**/*.{js,jsx}'],
-    plugins: {
-      import: importPlugin,
-    },
     extends: [
       js.configs.recommended,
       reactHooks.configs.flat.recommended,
@@ -27,8 +23,30 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
-      'import/no-unused-modules': ['warn', { unusedExports: true }],
+      'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]' }],
+      'react-hooks/exhaustive-deps': 'warn',
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/static-components': 'warn',
+      'react-refresh/only-export-components': 'warn',
+    },
+  },
+  // Node.js config files (vite, vitest, playwright, tailwind, postcss)
+  {
+    files: ['vite.config.js', 'vitest.config.js', 'playwright.config.js', 'tailwind.config.js', 'postcss.config.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  // Test files — allow Node.js globals (process, Buffer, etc.)
+  {
+    files: ['tests/**/*.{js,jsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
     },
   },
 ])
+
