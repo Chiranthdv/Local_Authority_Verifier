@@ -49,13 +49,6 @@ module.exports = async (req, res, next) => {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // --- EMERGENCY ADMIN BYPASS ---
-    if (payload.userId === "admin-id-123") {
-      req.user = { userId: "admin-id-123", role: "admin" };
-      return next();
-    }
-
     const user = await User.findOne({ _id: payload.userId, isDeleted: false }).select("_id role isDeleted");
 
     if (!user) {

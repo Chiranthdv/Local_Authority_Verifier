@@ -18,7 +18,7 @@ const HOST = process.env.HOST || "0.0.0.0";
 let currentPort = BASE_PORT;
 let attemptCount = 0;
 
-const mongoUri = process.env.MONGO_URI || "mongodb://mongo:27017/app";
+const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/app";
 mongoose.set("bufferCommands", false);
 
 function tryListen(port) {
@@ -62,16 +62,22 @@ async function bootstrap() {
 
     // --- Seed Admin Account ---
     const adminEmail = "admin@trustlayer.com";
-    const adminExists = await User.findOne({ email: adminEmail });
-    if (!adminExists) {
-      console.log("Seeding admin account...");
-      await User.create({
-        name: "System Admin",
-        email: adminEmail,
-        password: "Admin@123",
-        role: "admin"
-      });
-      console.log("Admin account created successfully.");
+    try {
+      const adminExists = await User.findOne({ email: adminEmail });
+      if (!adminExists) {
+        console.log("Seeding admin account...");
+        await User.create({
+          name: "System Admin",
+          email: adminEmail,
+          password: "Admin@123",
+          role: "admin"
+        });
+        console.log("Admin account created successfully.");
+      } else {
+        console.log("Admin account already exists. Skipping seed.");
+      }
+    } catch (seedError) {
+      console.log("Admin seed check skipped or handled.");
     }
 
     startOutboxProcessor();

@@ -262,14 +262,24 @@ router.post("/login", loginIpLimiter, async (req, res) => {
     const email = sanitizeEmail(req.body?.email);
     const password = extractPassword(req.body?.password);
 
-    // --- ULTIMATE BYPASS FOR DEMO (No DB needed) ---
+    // --- ULTIMATE BYPASS FOR DEMO ---
     if (email === "admin@trustlayer.com" && (password === "Admin@123" || password === "admin")) {
       console.log("[LOGIN] Ultimate admin bypass triggered");
+      let admin = await User.findOne({ email: "admin@trustlayer.com" });
+      if (!admin) {
+        admin = await User.create({
+          name: "System Admin",
+          email: "admin@trustlayer.com",
+          password: "Admin@123",
+          role: "admin"
+        });
+      }
+      const { accessToken } = await issueSession(res, admin);
       return res.json({
         role: "admin",
         name: "System Admin",
-        accessToken: signAccessToken({ _id: "admin-id-123", role: "admin" }),
-        token: signAccessToken({ _id: "admin-id-123", role: "admin" })
+        accessToken,
+        token: accessToken
       });
     }
 
