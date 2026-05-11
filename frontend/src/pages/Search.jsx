@@ -72,19 +72,23 @@ function Search() {
           Search by service type or location to find trusted, admin-approved professionals.
         </p>
 
-        <form onSubmit={handleSearchSubmit} className="mx-auto mt-8 max-w-2xl">
-          <div className="relative">
+        <form onSubmit={handleSearchSubmit} className="mx-auto mt-10 max-w-3xl">
+          <div className="group relative flex items-center rounded-full border border-white/10 bg-white/5 p-2 transition-all duration-300 focus-within:border-cyan-400/50 focus-within:bg-white/10 focus-within:shadow-[0_0_40px_rgba(34,211,238,0.15)]">
+            <div className="pl-6 text-slate-400">
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search by service (plumber) or area (Bangalore)"
-              className="w-full rounded-2xl border border-white/20 bg-slate-900/80 px-6 py-4 pr-16 text-lg text-white placeholder-slate-400 backdrop-blur-sm focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20"
+              placeholder="What service do you need? (e.g. plumber, Bangalore)"
+              className="w-full bg-transparent px-4 py-4 text-xl text-white placeholder-slate-500 outline-none"
             />
             <Button
               type="submit"
-              size="small"
-              className="absolute right-3 top-1/2 -translate-y-1/2"
+              className="rounded-full bg-cyan-400 px-8 py-4 font-bold text-slate-950 transition-transform active:scale-95"
             >
               Search
             </Button>

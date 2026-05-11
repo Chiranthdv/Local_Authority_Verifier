@@ -142,9 +142,9 @@ function Navbar() {
 
   return (
     <>
-      <header className="pointer-events-none fixed inset-x-0 top-0 z-40 px-4 pt-4 md:px-6">
-        <div className="pointer-events-auto mx-auto max-w-7xl">
-          <div className="glass-panel relative overflow-hidden rounded-full border border-white/10 px-4 py-3 shadow-[var(--shadow-glow)]">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl shadow-2xl">
+        <div className="mx-auto max-w-7xl px-4 py-3 md:px-6">
+          <div className="relative">
             <div className="flex items-center justify-between gap-4">
               <Logo />
 
