@@ -9,7 +9,9 @@ const {
   connectRealtime,
   disconnectRealtime,
   toastInfo,
-  clearSessionExpiryDispatch
+  clearSessionExpiryDispatch,
+  getStoredAccessToken,
+  clearStoredAccessToken
 } = vi.hoisted(() => ({
   apiMock: {
     get: vi.fn(),
@@ -24,12 +26,16 @@ const {
   })),
   disconnectRealtime: vi.fn(),
   toastInfo: vi.fn(),
-  clearSessionExpiryDispatch: vi.fn()
+  clearSessionExpiryDispatch: vi.fn(),
+  getStoredAccessToken: vi.fn(() => null),
+  clearStoredAccessToken: vi.fn()
 }));
 
 vi.mock("../lib/api", () => ({
   default: apiMock,
-  clearSessionExpiryDispatch
+  clearSessionExpiryDispatch,
+  getStoredAccessToken,
+  clearStoredAccessToken
 }));
 
 vi.mock("../lib/realtime", () => ({
