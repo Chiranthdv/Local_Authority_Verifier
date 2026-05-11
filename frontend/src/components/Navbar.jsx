@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+
 import { useAuth } from "../context/AuthContext";
 import { useUnreadNotifications } from "../hooks/useUnreadNotifications";
 
@@ -94,10 +95,11 @@ function Navbar() {
   const { unreadCount } = useUnreadNotifications();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const handleLogout = async () => {
+  const handleLogout = React.useCallback(async () => {
     await logout();
     navigate("/login");
-  };
+  }, [logout, navigate]);
+
 
   const navItems = useMemo(() => {
     if (!user) {

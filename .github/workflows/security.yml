@@ -117,3 +117,29 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Stage 7d: Trivy — Filesystem Vulnerability Scan
+  # ──────────────────────────────────────────────────────────────────────────
+  trivy-fs-scan:
+    name: "🔍 Trivy Filesystem Scan"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "📥 Checkout source code"
+        uses: actions/checkout@v4
+
+      - name: "🔍 Run Trivy FS scan (Backend)"
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'backend'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+
+      - name: "🔍 Run Trivy FS scan (Frontend)"
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'frontend'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'

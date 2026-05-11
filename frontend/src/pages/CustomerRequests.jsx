@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
 
@@ -16,7 +17,7 @@ function CustomerRequests() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState("");
 
-  const loadRequests = async (nextStatus = status) => {
+  const loadRequests = useCallback(async (nextStatus = status) => {
     try {
       setLoading(true);
       setError("");
@@ -28,7 +29,8 @@ function CustomerRequests() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [status]);
+
 
   useEffect(() => {
     loadRequests(status);
@@ -42,7 +44,8 @@ function CustomerRequests() {
     return () => {
       window.removeEventListener("app:booking:update", handleBookingUpdate);
     };
-  }, [status]);
+  }, [status, loadRequests]);
+
 
   const cancelRequest = async (id) => {
     try {

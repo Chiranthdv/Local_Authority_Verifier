@@ -14,6 +14,7 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const { buildLimiter } = require("./middleware/rateLimiters");
+const client = require("prom-client");
 
 const app = express();
 const trustProxy = Number.parseInt(process.env.TRUST_PROXY_HOPS || "0", 10);
@@ -32,6 +33,35 @@ const authLimiter = buildLimiter({
 if (Number.isInteger(trustProxy) && trustProxy > 0) {
   app.set("trust proxy", trustProxy);
 }
+
+// ── Prometheus Metrics Setup ──
+const collectDefaultMetrics = client.collectDefaultMetrics;
+collectDefaultMetrics({ register: client.register });
+
+const httpRequestDurationMicroseconds =
+  client.register.getSingleMetric("http_request_duration_ms") ||
+  new client.Histogram({
+    name: "http_request_duration_ms",
+    help: "Duration of HTTP requests in ms",
+    labelNames: ["method", "route", "code"],
+    buckets: [0.1, 5, 15, 50, 100, 200, 500, 1000, 2000, 5000]
+  });
+
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    httpRequestDurationMicroseconds
+      .labels(req.method, req.route?.path || req.path, res.statusCode)
+      .observe(duration);
+  });
+  next();
+});
+
+app.get("/api/metrics", async (req, res) => {
+  res.set("Content-Type", client.register.contentType);
+  res.end(await client.register.metrics());
+});
 
 app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));

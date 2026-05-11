@@ -1,5 +1,6 @@
 import React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
 import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
@@ -79,7 +80,7 @@ function WorkerProfile() {
   const privateWorker = workerData?.privateWorker || null;
   const worker = privateWorker || publicWorker;
 
-  const loadTimeSlots = async () => {
+  const loadTimeSlots = useCallback(async () => {
     try {
       const { data } = await api.get("/jobs/time-slots");
       const slots = Array.isArray(data) ? data : [];
@@ -90,11 +91,13 @@ function WorkerProfile() {
     } catch {
       setTimeSlots([]);
     }
-  };
+  }, [requestForm.timeSlotCode]);
+
 
   useEffect(() => {
     loadTimeSlots();
-  }, [id]);
+  }, [loadTimeSlots]);
+
 
   if (loading) {
     return <div className="mx-auto min-h-[50vh] max-w-6xl animate-pulse rounded-3xl bg-slate-800/60" />;

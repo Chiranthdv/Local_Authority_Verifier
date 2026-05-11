@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
 import api from "../lib/api";
 
 function Notifications() {
@@ -9,7 +10,7 @@ function Notifications() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
-  const loadNotifications = async ({ append = false } = {}) => {
+  const loadNotifications = useCallback(async ({ append = false } = {}) => {
     try {
       if (append) {
         setLoadingMore(true);
@@ -53,7 +54,8 @@ function Notifications() {
         setLoading(false);
       }
     }
-  };
+  }, [nextCursor]);
+
 
   useEffect(() => {
     loadNotifications({ append: false });
@@ -77,7 +79,8 @@ function Notifications() {
     return () => {
       window.removeEventListener("app:notification:new", handleRealtimeNotification);
     };
-  }, []);
+  }, [loadNotifications]);
+
 
   const markRead = async (id) => {
     try {

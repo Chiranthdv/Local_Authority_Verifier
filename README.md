@@ -260,3 +260,45 @@ db.jobs.find()
 # 👨‍💻 Author
 
 Built with ❤️ as a full-stack DevSecOps project
+
+---
+
+# 🛡️ DevSecOps & Monitoring
+
+This project includes a comprehensive DevSecOps pipeline with industry-standard tools for security, quality, and observability.
+
+## 🚀 CI/CD Pipeline (GitHub Actions)
+The pipeline is automated via GitHub Actions and consists of:
+1.  **🔍 Linting**: ESLint for both Frontend and Backend.
+2.  **🧪 Testing**: Unit and Integration tests with Jest.
+3.  **📊 Coverage**: Code coverage reports uploaded as artifacts.
+4.  **🛡️ SAST (CodeQL)**: GitHub's Static Application Security Testing.
+5.  **🔍 SonarQube**: Advanced code quality and security hotspot analysis.
+6.  **🐳 Docker Build**: Automated containerization.
+7.  **🔍 Trivy Scan**: Vulnerability scanning for Docker images and the filesystem.
+
+## 📊 Monitoring & Observability
+Real-time monitoring is implemented using the Prometheus stack:
+- **Prometheus**: Collects metrics from the backend and system.
+- **Grafana**: Visualizes metrics through interactive dashboards.
+- **Node Exporter**: Provides hardware and OS-level metrics.
+
+### Accessing Dashboards
+When running via Docker Compose, access these services at:
+- **Prometheus**: `http://localhost:9090`
+- **Grafana**: `http://localhost:3000` (User: `admin`, Pass: `admin`)
+- **Backend Metrics**: `http://localhost:5001/api/metrics`
+
+### Running the Stack
+To start the entire application with monitoring:
+```bash
+docker compose up -d
+```
+
+---
+
+# 🔑 Required Secrets
+To enable the full pipeline in GitHub, add the following secrets to your repository:
+- `SONAR_TOKEN`: Your SonarQube/SonarCloud token.
+- `SONAR_HOST_URL`: The URL of your SonarQube instance.
+- `GITHUB_TOKEN`: (Automatically provided by GitHub).

@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
 
@@ -12,7 +13,7 @@ function WorkerRequests() {
   const [error, setError] = useState("");
   const [rejectReasons, setRejectReasons] = useState({});
 
-  const loadRequests = async (nextStatus = status) => {
+  const loadRequests = useCallback(async (nextStatus = status) => {
     try {
       setLoading(true);
       setError("");
@@ -24,7 +25,8 @@ function WorkerRequests() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [status]);
+
 
   useEffect(() => {
     loadRequests(status);
@@ -38,7 +40,8 @@ function WorkerRequests() {
     return () => {
       window.removeEventListener("app:booking:update", handleBookingUpdate);
     };
-  }, [status]);
+  }, [status, loadRequests]);
+
 
   const acceptRequest = async (id) => {
     try {

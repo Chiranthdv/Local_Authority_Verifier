@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
 import { useSearchParams } from "react-router-dom";
 import api from "../lib/api";
 
@@ -28,7 +29,7 @@ function Chat() {
     [conversations, selectedConversationId]
   );
 
-  const loadConversations = async (preferredConversationId = "") => {
+  const loadConversations = useCallback(async (preferredConversationId = "") => {
     try {
       setLoadingConversations(true);
       const { data } = await api.get("/chats/my");
@@ -47,9 +48,10 @@ function Chat() {
     } finally {
       setLoadingConversations(false);
     }
-  };
+  }, [selectedConversationId]);
 
-  const loadMessages = async (conversationId) => {
+
+  const loadMessages = useCallback(async (conversationId) => {
     if (!conversationId) {
       setMessages([]);
       return;
@@ -70,7 +72,8 @@ function Chat() {
     } finally {
       setLoadingMessages(false);
     }
-  };
+  }, []);
+
 
   useEffect(() => {
     const startChatIfNeeded = async () => {
@@ -91,11 +94,13 @@ function Chat() {
     };
 
     startChatIfNeeded();
-  }, [workerIdFromQuery, customerIdFromQuery]);
+  }, [workerIdFromQuery, customerIdFromQuery, loadConversations]);
+
 
   useEffect(() => {
     loadMessages(selectedConversationId);
-  }, [selectedConversationId]);
+  }, [selectedConversationId, loadMessages]);
+
 
   useEffect(() => {
     const onChatMessage = (event) => {
@@ -141,7 +146,8 @@ function Chat() {
       window.removeEventListener("app:chat:message", onChatMessage);
       window.removeEventListener("app:chat:read", onChatRead);
     };
-  }, [selectedConversationId]);
+  }, [selectedConversationId, loadConversations]);
+
 
   const sendMessage = async (event) => {
     event.preventDefault();

@@ -66,7 +66,7 @@ export function useUnreadNotifications() {
       window.removeEventListener("app:notification:read", handleNotificationRead);
       window.removeEventListener("app:notification:read-all", handleAllRead);
     };
-  }, [user?._id]);
+  }, [user]);
 
   return { unreadCount: count, loading };
 }

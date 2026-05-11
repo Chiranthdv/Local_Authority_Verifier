@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
@@ -49,13 +50,14 @@ function WorkerOnboarding() {
     return fallbackMessage;
   };
 
-  const syncDocumentState = (items) => {
+  const syncDocumentState = useCallback((items) => {
     const list = Array.isArray(items) ? items : [];
     const certificateDocuments = list.filter((doc) => doc.documentType === "certificate");
     setCertificates(certificateDocuments);
-  };
+  }, []);
 
-  const loadWorkerDocuments = async () => {
+
+  const loadWorkerDocuments = useCallback(async () => {
     try {
       const workerUserId = user?._id;
       const response = workerUserId
@@ -65,9 +67,10 @@ function WorkerOnboarding() {
     } catch (error) {
       syncDocumentState([]);
     }
-  };
+  }, [user?._id, syncDocumentState]);
 
-  const loadExistingProfile = async () => {
+
+  const loadExistingProfile = useCallback(async () => {
     try {
       const { data } = await api.get("/workers/me/profile");
       setProfileId(data._id);
@@ -86,15 +89,18 @@ function WorkerOnboarding() {
     } finally {
       setInitialLoading(false);
     }
-  };
+  }, []);
+
 
   useEffect(() => {
     loadExistingProfile();
-  }, []);
+  }, [loadExistingProfile]);
+
 
   useEffect(() => {
     loadWorkerDocuments();
-  }, [user?._id]);
+  }, [loadWorkerDocuments]);
+
 
   const buildWorkerPayload = () => ({
     ...form,
