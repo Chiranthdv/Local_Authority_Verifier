@@ -79,6 +79,7 @@ describe("AuthContext", () => {
   });
 
   it("loads the current session, refreshes, and logs out cleanly", { timeout: 20000 }, async () => {
+    getStoredAccessToken.mockReturnValue("fake-token");
     apiMock.get
       .mockResolvedValueOnce({ data: { _id: "user-1", name: "Alice", role: "customer" } })
       .mockResolvedValueOnce({ data: { _id: "user-1", name: "Alice Updated", role: "customer" } })

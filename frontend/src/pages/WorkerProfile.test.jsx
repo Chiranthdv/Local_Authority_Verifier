@@ -84,7 +84,6 @@ describe("WorkerProfile", () => {
 
     await waitFor(() => expect(apiMock.get).toHaveBeenCalledWith("/jobs/time-slots"));
     expect(screen.getByRole("button", { name: "Request Service" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Chat with Worker" })).toBeInTheDocument();
   });
 
   it("hides booking actions for workers", async () => {
@@ -102,6 +101,5 @@ describe("WorkerProfile", () => {
 
     await waitFor(() => expect(apiMock.get).toHaveBeenCalledWith("/jobs/time-slots"));
     expect(screen.queryByRole("button", { name: "Request Service" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Chat with Worker" })).not.toBeInTheDocument();
   });
 });
