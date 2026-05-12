@@ -1,5 +1,4 @@
-import React from "react";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import api from "../lib/api";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
@@ -8,9 +7,9 @@ import AdminRestoreUserModal from "../components/AdminRestoreUserModal";
 function StatsSkeleton() {
   return (
     <div className="grid gap-3 md:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, index) => (
+      {["stat-1", "stat-2", "stat-3", "stat-4"].map((id) => (
         <div
-          key={index}
+          key={`stats-skeleton-${id}`}
           className="h-24 animate-pulse rounded-2xl border border-white/10 bg-white/5"
         />
       ))}
@@ -22,9 +21,9 @@ function TableSkeleton({ rows = 5 }) {
   return (
     <div className="overflow-hidden rounded-3xl border border-white/10">
       <div className="space-y-3 bg-white/5 p-4">
-        {Array.from({ length: rows }).map((_, index) => (
+        {["r1", "r2", "r3", "r4", "r5", "r6"].slice(0, rows).map((rowId) => (
           <div
-            key={index}
+            key={`table-skeleton-${rowId}`}
             className="h-14 animate-pulse rounded-2xl border border-white/10 bg-white/5"
           />
         ))}
@@ -420,9 +419,8 @@ function AdminDashboard() {
         />
         <ErrorBanner message={actionError} />
 
-        {loadingDashboard ? (
-          <StatsSkeleton />
-        ) : dashboardStats ? (
+        {loadingDashboard && <StatsSkeleton />}
+        {!loadingDashboard && dashboardStats && (
           <div className="grid gap-3 md:grid-cols-4">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Pending Workers</p>
@@ -441,7 +439,7 @@ function AdminDashboard() {
               <p className="mt-2 text-2xl font-semibold text-white">{dashboardStats.jobs?.open || 0}</p>
             </div>
           </div>
-        ) : null}
+        )}
 
         <div className="flex flex-wrap items-center gap-3">
           <Button

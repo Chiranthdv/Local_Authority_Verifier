@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1778476564435" clover="3.2.0">
-  <project timestamp="1778476564436" name="All files">
+<coverage generated="1778585475696" clover="3.2.0">
+  <project timestamp="1778585475700" name="All files">
     <metrics statements="28" coveredstatements="27" conditionals="19" coveredconditionals="12" methods="14" coveredmethods="14" elements="61" coveredelements="53" complexity="0" loc="28" ncloc="28" packages="1" files="2" classes="2"/>
     <file name="authValidation.js" path="C:\Users\rakshitha.d.v\OneDrive\Desktop\DevSec\Local_Authority_Verifier\backend\utils\authValidation.js">
       <metrics statements="9" coveredstatements="9" conditionals="4" coveredconditionals="2" methods="6" coveredmethods="6"/>

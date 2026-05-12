@@ -43,7 +43,7 @@ function WorkerCard({ worker }) {
       className="flex h-full flex-col rounded-3xl border border-white/10 bg-white/5 p-6 text-left shadow-lg transition hover:-translate-y-1 hover:border-cyan-400/50 disabled:cursor-not-allowed disabled:opacity-60"
     >
       <div className="mb-5 flex items-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500/30 to-sky-500/10 text-lg font-semibold text-cyan-200 ring-2 ring-cyan-400/30">
+        <div className="flex h-16 w-16 shrink-0 overflow-hidden items-center justify-center rounded-full bg-gradient-to-br from-cyan-500/30 to-sky-500/10 text-xl font-bold text-cyan-200 ring-2 ring-cyan-400/30">
           {getInitials(name)}
         </div>
 

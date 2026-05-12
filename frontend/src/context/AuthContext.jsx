@@ -1,5 +1,4 @@
-import React from "react";
-import { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import api, {
   clearSessionExpiryDispatch,
   clearStoredAccessToken,
@@ -57,7 +56,12 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
-    refreshUser();
+    const token = getStoredAccessToken();
+    if (token) {
+      refreshUser();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -143,21 +147,21 @@ export function AuthProvider({ children }) {
     setLoading(false);
   };
 
+  const authValue = React.useMemo(() => ({
+    token: getStoredAccessToken() || null,
+    user,
+    loading,
+    login,
+    logout,
+    refreshUser,
+    setUser,
+    clearSession,
+    sessionActive,
+    sessionExpiredMessage
+  }), [user, loading, sessionActive, sessionExpiredMessage]);
+
   return (
-    <AuthContext.Provider
-      value={{
-        token: getStoredAccessToken() || null,
-        user,
-        loading,
-        login,
-        logout,
-        refreshUser,
-        setUser,
-        clearSession,
-        sessionActive,
-        sessionExpiredMessage
-      }}
-    >
+    <AuthContext.Provider value={authValue}>
       {children}
     </AuthContext.Provider>
   );

@@ -119,7 +119,7 @@ jobSchema.post('findOneAndUpdate', async function (doc) {
     });
 
     if (!conversation) {
-      conversation = await Conversation.create({
+      await Conversation.create({
         customerId: doc.customerId,
         workerId: doc.workerId,
         jobId: doc._id,

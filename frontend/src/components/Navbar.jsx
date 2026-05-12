@@ -114,7 +114,6 @@ function Navbar() {
       return [
         { label: "Find Workers", to: "/search" },
         { label: "My Requests", to: "/requests/my" },
-        { label: "Chats", to: "/chats" },
         { label: "Notifications", to: "/notifications", badge: unreadCount },
         { label: "My Profile", to: "/profile" },
         { label: "Logout", to: "#", onClick: handleLogout }
@@ -125,7 +124,6 @@ function Navbar() {
       return [
         { label: "Dashboard", to: "/worker/onboarding" },
         { label: "Requests", to: "/requests/inbox" },
-        { label: "Chats", to: "/chats" },
         { label: "Notifications", to: "/notifications", badge: unreadCount },
         { label: "My Profile", to: "/profile" },
         { label: "Logout", to: "#", onClick: handleLogout }

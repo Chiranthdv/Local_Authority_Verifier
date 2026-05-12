@@ -68,8 +68,8 @@ async function bootstrap() {
         console.log("Seeding admin account...");
         await User.create({
           name: "System Admin",
-          email: adminEmail,
-          password: "Admin@123",
+          email: process.env.ADMIN_EMAIL,
+          password: process.env.ADMIN_PASSWORD,
           role: "admin"
         });
         console.log("Admin account created successfully.");

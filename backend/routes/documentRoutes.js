@@ -226,6 +226,10 @@ router.get("/file/:id", async (req, res) => {
       return res.status(403).json({ error: "Invalid access scope" });
     }
 
+    if (doc.fileUrl && (doc.fileUrl.startsWith("http://") || doc.fileUrl.startsWith("https://"))) {
+      return res.redirect(doc.fileUrl);
+    }
+
     const absolutePath = getDocumentFilePath(doc);
     if (!absolutePath || !fs.existsSync(absolutePath)) {
       return res.status(404).json({ error: "Document file not found" });

@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">52.43% </span>
+                <span class="strong">52.26% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>151/288</span>
+                <span class='fraction'>150/287</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">43.58% </span>
+                <span class="strong">45% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>17/39</span>
+                <span class='fraction'>18/40</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">38.46% </span>
+                <span class="strong">33.33% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>5/13</span>
+                <span class='fraction'>4/12</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">52.43% </span>
+                <span class="strong">52.26% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>151/288</span>
+                <span class='fraction'>150/287</span>
             </div>
         
             
@@ -392,8 +392,10 @@
 <a name='L327'></a><a href='#L327'>327</a>
 <a name='L328'></a><a href='#L328'>328</a>
 <a name='L329'></a><a href='#L329'>329</a>
-<a name='L330'></a><a href='#L330'>330</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<a name='L330'></a><a href='#L330'>330</a>
+<a name='L331'></a><a href='#L331'>331</a>
+<a name='L332'></a><a href='#L332'>332</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -474,21 +476,23 @@
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -721,8 +725,8 @@
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React from "react";
-import { useEffect, useState } from "react";
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useCallback, useEffect, useState } from "react";
+&nbsp;
 import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
@@ -802,7 +806,7 @@ function WorkerProfile() {
   const privateWorker = workerData?.<span class="branch-0 cbranch-no" title="branch not covered" >privateWorker || null;</span>
   const worker = <span class="branch-0 cbranch-no" title="branch not covered" >privateWorker || publicWorker;</span>
 &nbsp;
-  const loadTimeSlots = async () =&gt; {
+  const loadTimeSlots = useCallback(async () =&gt; {
     try {
       const { data } = await api.get("/jobs/time-slots");
       const slots = Array.isArray(data) ? <span class="branch-0 cbranch-no" title="branch not covered" >data : [];</span>
@@ -813,11 +817,13 @@ function WorkerProfile() {
 <span class="branch-0 cbranch-no" title="branch not covered" >    } catch {</span>
 <span class="cstat-no" title="statement not covered" >      setTimeSlots([]);</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
-  };
+  }, [requestForm.timeSlotCode]);
+&nbsp;
 &nbsp;
   useEffect(() =&gt; {
     loadTimeSlots();
-  }, [id]);
+  }, [loadTimeSlots]);
+&nbsp;
 &nbsp;
   if (loading) <span class="branch-0 cbranch-no" title="branch not covered" >{</span>
 <span class="cstat-no" title="statement not covered" >    return &lt;div className="mx-auto min-h-[50vh] max-w-6xl animate-pulse rounded-3xl bg-slate-800/60" /&gt;;</span>
@@ -1057,7 +1063,7 @@ export default WorkerProfile;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-11T05:15:48.626Z
+                at 2026-05-12T12:15:58.049Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

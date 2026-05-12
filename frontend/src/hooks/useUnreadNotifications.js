@@ -25,12 +25,17 @@ export function useUnreadNotifications() {
           }
         });
 
-        const items = Array.isArray(data?.items)
-          ? data.items
-          : (Array.isArray(data?.notifications) ? data.notifications : []);
+        let list = [];
+        if (Array.isArray(data)) {
+          list = data;
+        } else if (Array.isArray(data?.items)) {
+          list = data.items;
+        } else if (Array.isArray(data?.notifications)) {
+          list = data.notifications;
+        }
 
         if (isMounted) {
-          setCount(items.length);
+          setCount(list.length);
         }
       } catch {
         if (isMounted) {

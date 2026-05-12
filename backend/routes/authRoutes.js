@@ -16,7 +16,7 @@ const MAX_FAILED_LOGIN_ATTEMPTS = Number.parseInt(process.env.AUTH_MAX_FAILED_LO
 const ACCOUNT_LOCK_MINUTES = Number.parseInt(process.env.AUTH_ACCOUNT_LOCK_MINUTES, 10) || 15;
 const ACCESS_TOKEN_COOKIE = "accessToken";
 const REFRESH_TOKEN_COOKIE = "refreshToken";
-const ACCESS_TOKEN_EXPIRES_IN = "15m";
+const ACCESS_TOKEN_EXPIRES_IN = "2h";
 const REFRESH_TOKEN_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 
 function sanitizeText(value) {
@@ -49,7 +49,7 @@ function getCookieOptions() {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 15 * 60 * 1000
+    maxAge: 2 * 60 * 60 * 1000
   };
 }
 
@@ -124,7 +124,7 @@ async function revokeRefreshToken(refreshToken) {
   );
 }
 
-  async function issueSession(res, user) {
+async function issueSession(res, user) {
   const accessToken = signAccessToken(user);
   const refreshToken = await createRefreshTokenRecord(user._id);
   setAccessTokenCookie(res, accessToken);
@@ -251,8 +251,9 @@ router.post("/register", async (req, res) => {
       return res.status(409).json({ error: "Email already registered" });
     }
 
-    // Return more detailed error message
-    const errorMessage = err.message || "Could not register user";
+    // Sanitize error message for production to avoid information disclosure
+    const isProduction = process.env.NODE_ENV === "production";
+    const errorMessage = isProduction ? "Could not register user" : (err.message || "Could not register user");
     res.status(500).json({ error: errorMessage });
   }
 });
@@ -262,26 +263,8 @@ router.post("/login", loginIpLimiter, async (req, res) => {
     const email = sanitizeEmail(req.body?.email);
     const password = extractPassword(req.body?.password);
 
-    // --- ULTIMATE BYPASS FOR DEMO ---
-    if (email === "admin@trustlayer.com" && (password === "Admin@123" || password === "admin")) {
-      console.log("[LOGIN] Ultimate admin bypass triggered");
-      let admin = await User.findOne({ email: "admin@trustlayer.com" });
-      if (!admin) {
-        admin = await User.create({
-          name: "System Admin",
-          email: "admin@trustlayer.com",
-          password: "Admin@123",
-          role: "admin"
-        });
-      }
-      const { accessToken } = await issueSession(res, admin);
-      return res.json({
-        role: "admin",
-        name: "System Admin",
-        accessToken,
-        token: accessToken
-      });
-    }
+    // --- BYPASS REMOVED FOR SECURITY COMPLIANCE ---
+    console.log("[LOGIN] Standard authentication flow");
 
     console.log("[LOGIN] Incoming request:", { email });
 
@@ -314,7 +297,7 @@ router.post("/login", loginIpLimiter, async (req, res) => {
     await clearLoginFailureState(user);
 
     console.log("[LOGIN] Generating session tokens");
-    const { accessToken } = await issueSession(res, user);
+    const { accessToken, refreshToken: newRefreshToken } = await issueSession(res, user);
 
     const workerProfile = user.role === "worker"
       ? await WorkerProfile.findOne({ userId: user._id }).select("_id")
@@ -328,7 +311,7 @@ router.post("/login", loginIpLimiter, async (req, res) => {
       workerProfileId: workerProfile?._id ?? null,
       accessToken,
       token: accessToken,
-      refreshToken
+      refreshToken: newRefreshToken
     });
   } catch (err) {
     console.error("[LOGIN] Error during login:", {

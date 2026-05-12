@@ -1,5 +1,4 @@
-import React from "react";
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../lib/api";
@@ -140,8 +139,8 @@ function WorkerProfile() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <section className="grid gap-8 rounded-[2rem] border border-white/10 bg-white/5 p-8 lg:grid-cols-[280px_1fr]">
-        <div className="flex h-72 w-full items-center justify-center rounded-[2rem] bg-gradient-to-br from-cyan-500/20 to-sky-500/5 text-6xl font-semibold text-cyan-200">
-          {getInitials(worker.name)}
+        <div className="flex h-72 w-full overflow-hidden items-center justify-center rounded-[2rem] bg-gradient-to-br from-cyan-500/20 to-sky-500/5 text-7xl font-bold text-cyan-200 shadow-inner">
+          <span className="drop-shadow-lg">{getInitials(worker.name)}</span>
         </div>
 
         <div>
@@ -149,9 +148,16 @@ function WorkerProfile() {
             <h1 className="text-4xl font-semibold text-white">{sanitizeText(worker.name, "Worker")}</h1>
             {privateWorker ? getVerificationBadge(privateWorker.verificationStatus) : null}
           </div>
-          <p className="mt-3 text-slate-300">
-            {sanitizeText(worker.category, "General")} | {sanitizeText(worker.area, "Location pending")} | Rs {worker.hourlyRate || 0}/hr
-          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <p className="text-slate-300">
+              {sanitizeText(worker.category, "General")} | {sanitizeText(worker.area, "Location pending")} | Rs {worker.hourlyRate || 0}/hr
+            </p>
+            {worker.badgeLevel && (
+              <span className="ml-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-0.5 text-xs font-semibold uppercase tracking-wider text-cyan-300">
+                {worker.badgeLevel}
+              </span>
+            )}
+          </div>
           <p className="mt-2 text-slate-300">Experience: {worker.experience || 0} years</p>
           {user?.role === "customer" && privateWorker?.phone ? (
             <p className="mt-3 text-cyan-300">Phone: {sanitizeText(privateWorker.phone)}</p>
@@ -171,6 +177,39 @@ function WorkerProfile() {
               </p>
               <p className="mt-2 text-slate-400">{worker.reviewCount || 0} total reviews</p>
             </div>
+
+            <div className="relative flex flex-col items-center rounded-2xl bg-slate-900/70 p-6 text-center">
+              <p className="mb-4 text-xs uppercase tracking-[0.2em] text-slate-400">Trust Score</p>
+              <div className="relative flex h-24 w-24 items-center justify-center">
+                <svg className="h-full w-full -rotate-90 transform">
+                  <circle
+                    cx="48"
+                    cy="48"
+                    r="40"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    fill="transparent"
+                    className="text-white/5"
+                  />
+                  <circle
+                    cx="48"
+                    cy="48"
+                    r="40"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    strokeDasharray={2 * Math.PI * 40}
+                    strokeDashoffset={2 * Math.PI * 40 * (1 - (worker.trustScore || 0) / 100)}
+                    strokeLinecap="round"
+                    fill="transparent"
+                    className="text-cyan-400 transition-all duration-1000 ease-out"
+                  />
+                </svg>
+                <span className="absolute text-xl font-bold text-white">
+                  {worker.trustScore || 0}%
+                </span>
+              </div>
+              <p className="mt-4 text-[10px] leading-relaxed text-slate-500">Based on verified history and reviews</p>
+            </div>
           </div>
 
           {user?.role === "customer" ? (
@@ -180,18 +219,6 @@ function WorkerProfile() {
                 className="rounded-full bg-cyan-400 px-4 py-2 font-medium text-slate-950"
               >
                 Request Service
-              </button>
-              <button
-                onClick={() => {
-                  if (!privateWorker?.workerUserId) {
-                    setRequestError("Login as customer to start chat.");
-                    return;
-                  }
-                  navigate(`/chats?workerId=${privateWorker.workerUserId}`);
-                }}
-                className="rounded-full border border-cyan-300/40 px-4 py-2 text-cyan-200"
-              >
-                Chat with Worker
               </button>
               <span className="text-sm text-slate-400">
                 Rate this worker after job completion from{" "}

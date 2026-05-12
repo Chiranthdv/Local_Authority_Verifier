@@ -217,6 +217,8 @@ function toPublicWorkerDTO(worker, averageRating) {
     name: worker.userId?.name || "Worker",
     category: worker.category || "",
     rating: averageRating,
+    trustScore: Number(worker.trustScore || 0),
+    badgeLevel: getBadgeLevel(worker.trustScore),
     experience: worker.experience || 0,
     area: worker.location || ""
   };
@@ -234,6 +236,7 @@ function toPrivateWorkerDTO({ worker, averageRating, reviewCount, reviews = [], 
     rating: averageRating,
     reviewCount,
     verificationStatus: worker.verificationStatus,
+    trustScore: Number(worker.trustScore || 0),
     badgeLevel: getBadgeLevel(worker.trustScore),
     bio: worker.bio || "",
     hourlyRate: worker.hourlyRate || 0,

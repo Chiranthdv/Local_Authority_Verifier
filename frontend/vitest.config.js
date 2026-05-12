@@ -10,7 +10,11 @@ export default defineConfig({
     setupFiles: "./src/test/setup.js",
     css: true,
     include: ["src/**/*.{test,spec}.{js,jsx}"],
-    exclude: ["tests/**"]
+    exclude: ["tests/**"],
+    coverage: {
+      reporter: ["text", "json", "html", "lcov"],
+      reportsDirectory: "./coverage"
+    }
   },
   resolve: {
     alias: {

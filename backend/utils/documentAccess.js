@@ -40,7 +40,17 @@ function verifyDocumentAccessToken(token) {
 
 function buildSignedDocumentUrl(req, documentId, options = {}) {
   const token = signDocumentAccessToken({ documentId, ...options });
-  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  let host = req.get("host");
+
+  // In Docker environments, internal requests might use 'backend:5001'
+  // but the browser (on host) needs 'localhost:5001'.
+  if (host && host.includes("backend:")) {
+    host = host.replace("backend:", "localhost:");
+  } else if (host === "backend") {
+    host = "localhost:5001";
+  }
+
+  const baseUrl = `${req.protocol}://${host}`;
   return `${baseUrl}/api/documents/file/${documentId}?token=${encodeURIComponent(token)}`;
 }
 

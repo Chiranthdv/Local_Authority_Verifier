@@ -23,6 +23,11 @@ function Register() {
     try {
       await api.post("/auth/register", form);
       const loginRes = await api.post("/auth/login", { email: form.email, password: form.password });
+      const accessToken = loginRes.data?.accessToken || loginRes.data?.token || "";
+      if (typeof accessToken === "string" && accessToken.trim()) {
+        const { setStoredAccessToken: setToken } = await import("../lib/api");
+        setToken(accessToken);
+      }
       await login();
 
       if (form.role === "worker") {

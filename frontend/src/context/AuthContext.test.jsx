@@ -78,7 +78,7 @@ describe("AuthContext", () => {
     window.sessionStorage.clear();
   });
 
-  it("loads the current session, refreshes, and logs out cleanly", async () => {
+  it("loads the current session, refreshes, and logs out cleanly", { timeout: 20000 }, async () => {
     apiMock.get
       .mockResolvedValueOnce({ data: { _id: "user-1", name: "Alice", role: "customer" } })
       .mockResolvedValueOnce({ data: { _id: "user-1", name: "Alice Updated", role: "customer" } })

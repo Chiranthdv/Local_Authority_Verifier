@@ -34,7 +34,7 @@ function signAccessToken(user) {
   return jwt.sign(
     { userId: user._id, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: "15m" }
+    { expiresIn: "2h" }
   );
 }
 
@@ -61,7 +61,7 @@ function setAccessTokenCookie(res, token) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 15 * 60 * 1000
+    maxAge: 2 * 60 * 60 * 1000
   });
 }
 

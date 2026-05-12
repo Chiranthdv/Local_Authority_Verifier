@@ -86,10 +86,15 @@ function isConversationDisabled(conversation) {
 
 function normalizeMessageText(rawText) {
   if (typeof rawText !== "string") return "";
-  return rawText
-    .replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  let cleaned = "";
+  for (let i = 0; i < rawText.length; i++) {
+    const code = rawText.charCodeAt(i);
+    // Filter out control characters (0-31 and 127) except tab, newline, and carriage return
+    if ((code >= 32 && code <= 126) || code === 9 || code === 10 || code === 13 || code > 127) {
+      cleaned += rawText[i];
+    }
+  }
+  return cleaned.replace(/\s+/g, " ").trim();
 }
 
 function hasSpamPattern(text) {
@@ -98,8 +103,7 @@ function hasSpamPattern(text) {
   const linkCount = (text.match(/\b(?:https?:\/\/|www\.)\S+/gi) || []).length;
   if (linkCount > CHAT_MAX_LINKS_PER_MESSAGE) return true;
   const tokens = text.toLowerCase().split(/\s+/).filter(Boolean);
-  if (tokens.length >= 6 && new Set(tokens).size === 1) return true;
-  return false;
+  return tokens.length >= 6 && new Set(tokens).size === 1;
 }
 
 function validateMessageText(rawText) {
@@ -487,7 +491,9 @@ router.get("/:conversationId/messages", auth, role("customer", "worker"), loadCo
     const hasMore = rows.length > limit;
     const pageDesc = hasMore ? rows.slice(0, limit) : rows;
     const nextCursor = hasMore ? encodeCursor(pageDesc[pageDesc.length - 1]) : null;
-    const messages = pageDesc.reverse();
+    
+    pageDesc.reverse();
+    const messages = pageDesc;
 
     const messageIds = messages.map((item) => item._id).filter(Boolean);
     if (messageIds.length) {

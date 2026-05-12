@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
@@ -251,8 +251,8 @@ function WorkerOnboarding() {
 
         <div className="mb-8">
           <div className="mb-2 flex justify-between text-sm text-slate-400">
-            {STEPS.map((step, index) => (
-              <span key={index} className={index <= currentStep ? "text-cyan-400" : ""}>
+            {STEPS.map((step) => (
+              <span key={`step-${step.title.toLowerCase().replace(/\s+/g, '-')}`} className={STEPS.indexOf(step) <= currentStep ? "text-cyan-400" : ""}>
                 {step.title}
               </span>
             ))}
@@ -365,12 +365,12 @@ function WorkerOnboarding() {
                   {certificateFiles.length > 0 && (
                     <div className="mb-4 space-y-2">
                       <p className="text-sm font-medium text-cyan-300">Selected Files:</p>
-                      {certificateFiles.map((file, index) => (
-                        <div key={`${file.name}-${index}`} className="flex items-center justify-between rounded border border-cyan-500/20 bg-cyan-900/20 p-2">
+                      {certificateFiles.map((file) => (
+                        <div key={`file-${file.name}-${file.size}-${file.lastModified}`} className="flex items-center justify-between rounded border border-cyan-500/20 bg-cyan-900/20 p-2">
                           <span className="text-sm text-cyan-300">{file.name}</span>
                           <button
                             type="button"
-                            onClick={() => removeCertificateFile(index)}
+                            onClick={() => removeCertificateFile(certificateFiles.indexOf(file))}
                             className="text-sm text-red-400 hover:text-red-300"
                           >
                             Remove
@@ -387,7 +387,7 @@ function WorkerOnboarding() {
                     size="small"
                     className="w-full"
                   >
-                    {loading ? "Uploading..." : `Upload ${certificateFiles.length} Certificate${certificateFiles.length !== 1 ? "s" : ""}`}
+                    {loading ? "Uploading..." : `Upload ${certificateFiles.length} Certificate${certificateFiles.length === 1 ? "" : "s"}`}
                   </Button>
                 </div>
 

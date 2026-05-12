@@ -172,6 +172,24 @@ services:
     networks:
       - mern_net
 
+  # ──────────────────────────────────────────────────────────────────────────
+  # SonarQube — Local Code Quality & Security Analysis
+  # ──────────────────────────────────────────────────────────────────────────
+  sonarqube:
+    image: sonarqube:lts-community
+    container_name: trustlayer-sonarqube
+    restart: unless-stopped
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    networks:
+      - mern_net
+
 volumes:
   mongo_data:
   redis_data:
@@ -179,6 +197,9 @@ volumes:
   frontend_node_modules:
   prometheus_data:
   grafana_data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
 
 networks:
   mern_net:

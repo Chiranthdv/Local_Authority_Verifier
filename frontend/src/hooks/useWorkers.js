@@ -66,7 +66,8 @@ export function useWorkerProfile(workerRef) {
     queryKey: ["worker-profile", workerRef, user?.role || "guest"],
     queryFn: () => fetchWorkerProfile(workerRef, user?.role),
     enabled: Boolean(workerRef),
-    staleTime: 5 * 60 * 1000
+    staleTime: 0,
+    refetchOnWindowFocus: true
   });
 }
 

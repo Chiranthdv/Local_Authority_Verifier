@@ -4,5 +4,8 @@ module.exports = {
   moduleFileExtensions: ["js", "json"],
   verbose: true,
   setupFiles: ["<rootDir>/tests/jest.setup.js"],
-  testPathIgnorePatterns: ["/node_modules/"]
+  testPathIgnorePatterns: ["/node_modules/"],
+  collectCoverage: true,
+  coverageReporters: ["text", "lcov", "json"],
+  coverageDirectory: "coverage"
 };

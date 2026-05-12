@@ -93,9 +93,12 @@ app.use((err, req, res, next) => {
   }
 
   const statusCode = Number.isInteger(err?.statusCode) ? err.statusCode : 500;
+  const isProduction = process.env.NODE_ENV === "production";
+  const errorMessage = isProduction ? "Internal server error" : (err?.message || "Internal server error");
+  
   return res.status(statusCode).json({
-    error: err?.message || "Internal server error",
-    message: err?.message || "Internal server error"
+    error: errorMessage,
+    message: errorMessage
   });
 });
 

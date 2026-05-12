@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/179</span>
+                <span class='fraction'>0/183</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/179</span>
+                <span class='fraction'>0/183</span>
             </div>
         
             
@@ -278,7 +278,11 @@
 <a name='L213'></a><a href='#L213'>213</a>
 <a name='L214'></a><a href='#L214'>214</a>
 <a name='L215'></a><a href='#L215'>215</a>
-<a name='L216'></a><a href='#L216'>216</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L216'></a><a href='#L216'>216</a>
+<a name='L217'></a><a href='#L217'>217</a>
+<a name='L218'></a><a href='#L218'>218</a>
+<a name='L219'></a><a href='#L219'>219</a>
+<a name='L220'></a><a href='#L220'>220</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -352,6 +356,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -567,19 +575,23 @@
           Search by service type or location to find trusted, admin-approved professionals.
 <span class="cstat-no" title="statement not covered" >        &lt;/p&gt;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >        &lt;form onSubmit={handleSearchSubmit} className="mx-auto mt-8 max-w-2xl"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="relative"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;form onSubmit={handleSearchSubmit} className="mx-auto mt-10 max-w-3xl"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="group relative flex items-center rounded-full border border-white/10 bg-white/5 p-2 transition-all duration-300 focus-within:border-cyan-400/50 focus-within:bg-white/10 focus-within:shadow-[0_0_40px_rgba(34,211,238,0.15)]"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="pl-6 text-slate-400"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/svg&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;input</span>
 <span class="cstat-no" title="statement not covered" >              type="text"</span>
 <span class="cstat-no" title="statement not covered" >              value={searchQuery}</span>
 <span class="cstat-no" title="statement not covered" >              onChange={(event) =&gt; setSearchQuery(event.target.value)}</span>
-<span class="cstat-no" title="statement not covered" >              placeholder="Search by service (plumber) or area (Bangalore)"</span>
-<span class="cstat-no" title="statement not covered" >              className="w-full rounded-2xl border border-white/20 bg-slate-900/80 px-6 py-4 pr-16 text-lg text-white placeholder-slate-400 backdrop-blur-sm focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20"</span>
+<span class="cstat-no" title="statement not covered" >              placeholder="What service do you need? (e.g. plumber, Bangalore)"</span>
+<span class="cstat-no" title="statement not covered" >              className="w-full bg-transparent px-4 py-4 text-xl text-white placeholder-slate-500 outline-none"</span>
 <span class="cstat-no" title="statement not covered" >            /&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;Button</span>
 <span class="cstat-no" title="statement not covered" >              type="submit"</span>
-<span class="cstat-no" title="statement not covered" >              size="small"</span>
-<span class="cstat-no" title="statement not covered" >              className="absolute right-3 top-1/2 -translate-y-1/2"</span>
+<span class="cstat-no" title="statement not covered" >              className="rounded-full bg-cyan-400 px-8 py-4 font-bold text-slate-950 transition-transform active:scale-95"</span>
 <span class="cstat-no" title="statement not covered" >            &gt;</span>
               Search
 <span class="cstat-no" title="statement not covered" >            &lt;/Button&gt;</span>
@@ -644,8 +656,8 @@
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      {loading &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          {Array.from({ length: 6 }).map((_, index) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >            &lt;div key={index} className="h-72 animate-pulse rounded-3xl border border-white/10 bg-slate-800/70" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >          {[1, 2, 3, 4, 5, 6].map((id) =&gt; (</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div key={`search-skeleton-${id}`} className="h-72 animate-pulse rounded-3xl border border-white/10 bg-slate-800/70" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >          ))}</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
       )}
@@ -715,7 +727,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-11T05:15:48.626Z
+                at 2026-05-12T12:15:58.049Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

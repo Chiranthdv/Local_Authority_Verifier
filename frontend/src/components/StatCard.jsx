@@ -11,12 +11,12 @@ function StatCard({
   detail = "",
   className = ""
 }) {
-  const glowClass =
-    tone === "mint"
-      ? "shadow-[var(--glow-mint)]"
-      : tone === "amber"
-        ? "shadow-[var(--glow-amber)]"
-        : "shadow-[var(--glow-cyan)]";
+  const toneGlows = {
+    mint: "shadow-[var(--glow-mint)]",
+    amber: "shadow-[var(--glow-amber)]",
+    cyan: "shadow-[var(--glow-cyan)]"
+  };
+  const glowClass = toneGlows[tone] || toneGlows.cyan;
 
   return (
     <motion.div variants={staggerItem}>

@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">53% </span>
+                <span class="strong">52.93% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>291/549</span>
+                <span class='fraction'>289/546</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">69.64% </span>
+                <span class="strong">71.42% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>39/56</span>
+                <span class='fraction'>40/56</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">53% </span>
+                <span class="strong">52.93% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>291/549</span>
+                <span class='fraction'>289/546</span>
             </div>
         
             
@@ -693,10 +693,7 @@
 <a name='L628'></a><a href='#L628'>628</a>
 <a name='L629'></a><a href='#L629'>629</a>
 <a name='L630'></a><a href='#L630'>630</a>
-<a name='L631'></a><a href='#L631'>631</a>
-<a name='L632'></a><a href='#L632'>632</a>
-<a name='L633'></a><a href='#L633'>633</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<a name='L631'></a><a href='#L631'>631</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -1118,7 +1115,7 @@
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">6x</span>
@@ -1137,8 +1134,7 @@
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">6x</span>
-<span class="cline-any cline-yes">6x</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-yes">7x</span>
@@ -1327,8 +1323,7 @@
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React from "react";
-import { useEffect, useMemo, useState } from "react";
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import React, { useEffect, useMemo, useState } from "react";
 import api from "../lib/api";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
@@ -1337,9 +1332,9 @@ import AdminRestoreUserModal from "../components/AdminRestoreUserModal";
 function StatsSkeleton() {
   return (
     &lt;div className="grid gap-3 md:grid-cols-4"&gt;
-      {Array.from({ length: 4 }).map((_, index) =&gt; (
+      {["stat-1", "stat-2", "stat-3", "stat-4"].map((id) =&gt; (
         &lt;div
-          key={index}
+          key={`stats-skeleton-${id}`}
           className="h-24 animate-pulse rounded-2xl border border-white/10 bg-white/5"
         /&gt;
       ))}
@@ -1353,7 +1348,7 @@ function TableSkeleton({ rows = 5 }) {
       &lt;div className="space-y-3 bg-white/5 p-4"&gt;
         {Array.from({ length: rows }).map((_, index) =&gt; (
           &lt;div
-            key={index}
+            key={`table-skeleton-row-${index}`}
             className="h-14 animate-pulse rounded-2xl border border-white/10 bg-white/5"
           /&gt;
         ))}
@@ -1749,9 +1744,8 @@ function AdminDashboard() {
         /&gt;
         &lt;ErrorBanner message={actionError} /&gt;
 &nbsp;
-        {loadingDashboard ? (
-          &lt;StatsSkeleton /&gt;
-        ) : dashboardStats ? (
+        {loadingDashboard &amp;&amp; &lt;StatsSkeleton /&gt;}
+        {!loadingDashboard &amp;&amp; dashboardStats &amp;&amp; (
           &lt;div className="grid gap-3 md:grid-cols-4"&gt;
             &lt;div className="rounded-2xl border border-white/10 bg-white/5 p-4"&gt;
               &lt;p className="text-xs uppercase tracking-[0.2em] text-slate-400"&gt;Pending Workers&lt;/p&gt;
@@ -1769,8 +1763,8 @@ function AdminDashboard() {
               &lt;p className="text-xs uppercase tracking-[0.2em] text-slate-400"&gt;Open Jobs&lt;/p&gt;
               &lt;p className="mt-2 text-2xl font-semibold text-white"&gt;{dashboardStats.jobs?.<span class="branch-0 cbranch-no" title="branch not covered" >open || 0}&lt;</span>/p&gt;
             &lt;/div&gt;
-<span class="branch-0 cbranch-no" title="branch not covered" >          &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >        ) : null}</span>
+          &lt;/div&gt;
+        )}
 &nbsp;
         &lt;div className="flex flex-wrap items-center gap-3"&gt;
           &lt;Button
@@ -1966,7 +1960,7 @@ export default AdminDashboard;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-11T05:15:48.626Z
+                at 2026-05-12T12:15:58.049Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

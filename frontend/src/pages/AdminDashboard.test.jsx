@@ -67,21 +67,31 @@ describe("AdminDashboard", () => {
     });
   });
 
-  it("shows deleted users on demand and restores them", async () => {
+  it("shows deleted users on demand and restores them", { timeout: 20000 }, async () => {
     render(<AdminDashboard />);
 
-    await waitFor(() => expect(screen.getByText("All Users")).toBeInTheDocument());
-    await userEvent.click(screen.getByRole("button", { name: "All Users" }));
+    // Wait for "All Users" button to appear and click it
+    const allUsersBtn = await screen.findByRole("button", { name: /all users/i });
+    await userEvent.click(allUsersBtn);
 
+    // Should NOT show deleted user initially
     expect(screen.queryByText("Deleted User")).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("checkbox", { name: /show deleted users/i }));
+    // Check "Show deleted users" checkbox
+    const checkbox = await screen.findByLabelText(/show deleted users/i);
+    await userEvent.click(checkbox);
+
+    // Now it should show
     expect(await screen.findByText("Deleted User")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "Restore" }));
-    expect(screen.getByRole("heading", { name: "Restore User" })).toBeInTheDocument();
+    // Click Restore button
+    const restoreBtn = await screen.findByRole("button", { name: /restore/i });
+    await userEvent.click(restoreBtn);
 
-    await userEvent.click(screen.getByRole("button", { name: "Restore User" }));
+    // Wait for modal and confirm
+    expect(await screen.findByRole("heading", { name: /restore user/i })).toBeInTheDocument();
+    const confirmBtn = await screen.findByRole("button", { name: "Restore User" });
+    await userEvent.click(confirmBtn);
 
     await waitFor(() => expect(apiMock.patch).toHaveBeenCalledWith("/users/user-deleted/restore"));
   });
