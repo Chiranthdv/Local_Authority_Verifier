@@ -61,23 +61,25 @@ async function bootstrap() {
     console.log("MongoDB Connected");
 
     // --- Seed Admin Account ---
-    const adminEmail = "admin@trustlayer.com";
     try {
+      const adminEmail = "admin@example.com";
       const adminExists = await User.findOne({ email: adminEmail });
       if (!adminExists) {
         console.log("Seeding admin account...");
         await User.create({
-          name: "System Admin",
-          email: process.env.ADMIN_EMAIL,
-          password: process.env.ADMIN_PASSWORD,
+          name: "Main Admin",
+          email: adminEmail,
+          password: "Admin123!",
           role: "admin"
         });
         console.log("Admin account created successfully.");
       } else {
-        console.log("Admin account already exists. Skipping seed.");
+        adminExists.password = "Admin123!";
+        await adminExists.save();
+        console.log("Admin account updated with fresh password.");
       }
     } catch (seedError) {
-      console.log("Admin seed check skipped or handled.");
+      console.log("Admin seed handled:", seedError.message);
     }
 
     startOutboxProcessor();
