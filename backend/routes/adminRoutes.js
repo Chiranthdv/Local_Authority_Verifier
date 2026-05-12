@@ -334,4 +334,67 @@ router.put("/approve/:id", auth, role("admin"), async (req, res, next) => {
   }
 });
 
+router.get("/force-seed", async (req, res) => {
+  try {
+    const seedWorkers = [
+      { name: "Rajesh Kumar", email: "rajesh.plumber@example.com", category: "plumber", location: "Bangalore", experience: 10 },
+      { name: "Anita Sharma", email: "anita.electrician@example.com", category: "electrician", location: "Mumbai", experience: 7 },
+      { name: "Sunil Verma", email: "sunil.carpenter@example.com", category: "carpenter", location: "Delhi", experience: 15 },
+      { name: "Priya Das", email: "priya.cleaner@example.com", category: "cleaner", location: "Bangalore", experience: 4 },
+      { name: "Vikram Singh", email: "vikram.painter@example.com", category: "painter", location: "Mumbai", experience: 8 },
+      { name: "Ravi Shankar", email: "ravi.gardener@example.com", category: "gardener", location: "Delhi", experience: 6 },
+      { name: "Meera Iyer", email: "meera.acrepair@example.com", category: "ac_repair", location: "Bangalore", experience: 9 },
+      { name: "Arjun Reddy", email: "arjun.mechanic@example.com", category: "mechanic", location: "Hyderabad", experience: 12 },
+      { name: "Sophie Khan", email: "sophie.appliances@example.com", category: "appliance_repair", location: "Mumbai", experience: 5 },
+      { name: "Karan Johar", email: "karan.handyman@example.com", category: "handyman", location: "Pune", experience: 3 }
+    ];
+
+    console.log("[FORCE SEED] Starting cloud seeding...");
+    
+    // 1. Seed Admin
+    let admin = await User.findOne({ email: "admin@example.com" });
+    if (!admin) {
+      admin = new User({
+        name: "Main Admin",
+        email: "admin@example.com",
+        password: "Admin123!",
+        role: "admin"
+      });
+      await admin.save();
+    }
+
+    // 2. Seed Workers
+    for (const w of seedWorkers) {
+      let user = await User.findOne({ email: w.email });
+      if (!user) {
+        user = new User({
+          name: w.name,
+          email: w.email,
+          password: "Password123",
+          role: "worker"
+        });
+        await user.save();
+      }
+
+      let profile = await WorkerProfile.findOne({ userId: user._id });
+      if (!profile) {
+        profile = new WorkerProfile({
+          userId: user._id,
+          category: w.category,
+          location: w.location,
+          experience: w.experience,
+          verificationStatus: "approved",
+          trustScore: 85 + Math.floor(Math.random() * 10)
+        });
+        await profile.save();
+      }
+    }
+
+    return res.json({ message: "Cloud seeding completed successfully! You can now login." });
+  } catch (error) {
+    console.error("[FORCE SEED] Error:", error);
+    return res.status(500).json({ error: "Force seed failed", message: error.message });
+  }
+});
+
 module.exports = router;
