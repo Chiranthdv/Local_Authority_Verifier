@@ -45,8 +45,6 @@ services:
     init: true
     restart: unless-stopped
     depends_on:
-      mongo:
-        condition: service_started
       redis:
         condition: service_healthy
     environment:
@@ -54,7 +52,7 @@ services:
       API_PORT: "5001"
       PORT: "5001"
       HOST: "0.0.0.0"
-      MONGO_URI: mongodb://mongo:27017/Local_AuthorityV_db
+      MONGO_URI: mongodb+srv://chiranthdv45_db_user:TUXMMWFmQSrXaB7f@cluster0.3exgqc3.mongodb.net/Local_AuthorityV_db?retryWrites=true&w=majority
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       CLIENT_URL: ${CLIENT_URL:-http://localhost:5173}
