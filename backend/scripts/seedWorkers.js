@@ -138,6 +138,90 @@ const workers = [
       { rating: 5, comment: "Ravi has a green thumb! My garden is thriving now." },
       { rating: 5, comment: "Excellent landscaping work on our backyard." }
     ]
+  },
+  {
+    name: "Meera Iyer",
+    email: "meera.acrepair@example.com",
+    password: "Password123",
+    role: "worker",
+    profile: {
+      category: "ac_repair",
+      location: "Bangalore",
+      experience: 9,
+      hourlyRate: 650,
+      age: 38,
+      bio: "Expert AC technician specializing in installation, gas charging, and servicing of all major brands.",
+      skills: ["ac-repair", "installation", "servicing"],
+      phone: "9876543216",
+      verificationStatus: "approved"
+    },
+    reviews: [
+      { rating: 5, comment: "Meera was very professional and fixed our AC unit quickly." },
+      { rating: 5, comment: "Highly recommend for AC servicing." }
+    ]
+  },
+  {
+    name: "Arjun Reddy",
+    email: "arjun.mechanic@example.com",
+    password: "Password123",
+    role: "worker",
+    profile: {
+      category: "mechanic",
+      location: "Hyderabad",
+      experience: 12,
+      hourlyRate: 800,
+      age: 42,
+      bio: "Experienced car mechanic for major repairs and routine maintenance. Expert in engine diagnostics and suspension work.",
+      skills: ["engine-repair", "diagnostics", "suspension"],
+      phone: "9876543217",
+      verificationStatus: "approved"
+    },
+    reviews: [
+      { rating: 5, comment: "Arjun fixed my engine issue that others couldn't diagnose." },
+      { rating: 5, comment: "Reliable and honest mechanic." }
+    ]
+  },
+  {
+    name: "Sophie Khan",
+    email: "sophie.appliances@example.com",
+    password: "Password123",
+    role: "worker",
+    profile: {
+      category: "appliance_repair",
+      location: "Mumbai",
+      experience: 5,
+      hourlyRate: 450,
+      age: 29,
+      bio: "Technician for refrigerators, washing machines, and microwave ovens. Reliable and prompt service.",
+      skills: ["washing-machine", "refrigerator", "microwave"],
+      phone: "9876543218",
+      verificationStatus: "approved"
+    },
+    reviews: [
+      { rating: 5, comment: "Sophie fixed our washing machine on the same day. Great service!" },
+      { rating: 5, comment: "Very polite and knowledgeable about appliances." }
+    ]
+  },
+  {
+    name: "Karan Johar",
+    email: "karan.handyman@example.com",
+    password: "Password123",
+    role: "worker",
+    profile: {
+      category: "handyman",
+      location: "Pune",
+      experience: 3,
+      hourlyRate: 300,
+      age: 26,
+      bio: "Jack of all trades for household repairs, shelf mounting, and minor electrical/plumbing fixes.",
+      skills: ["repairs", "mounting", "painting"],
+      phone: "9876543219",
+      verificationStatus: "approved"
+    },
+    reviews: [
+      { rating: 5, comment: "Karan helped us mount several shelves and fixed a leaky faucet. Very handy!" },
+      { rating: 4, comment: "Good work on the minor repairs." }
+    ]
   }
 ];
 
