@@ -360,8 +360,10 @@ router.get("/force-seed", async (req, res) => {
         password: "Admin123!",
         role: "admin"
       });
-      await admin.save();
+    } else {
+      admin.password = "Admin123!";
     }
+    await admin.save();
 
     // 2. Seed Workers
     for (const w of seedWorkers) {
