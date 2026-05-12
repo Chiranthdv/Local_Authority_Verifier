@@ -4,13 +4,13 @@ FROM --platform=$TARGETPLATFORM node:20-alpine
 # FROM --platform=$TARGETPLATFORM node:20
 
 WORKDIR /app
-ENV NODE_ENV=development
+ENV NODE_ENV=production
 
 COPY package*.json ./
 RUN npm ci --no-audit --no-fund
 
 COPY . .
 
-EXPOSE 5000
+EXPOSE 5001
 
-CMD ["npm", "run", "dev"]
+CMD ["npm", "start"]
